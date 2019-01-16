@@ -33,7 +33,7 @@ import           Sail    ( SailBackend(..), sailSimRules )
 -- | Append the build directory to a path; this is just a shorthand so the
 -- build directory is not hardcoded everywhere.
 bdir :: FilePath -> FilePath
-bdir = ("_make" </>)
+bdir = ("build" </>)
 
 --------------------------------------------------------------------------------
 -- Main Shake Ruleset
@@ -47,7 +47,7 @@ specSources
   -- selected.
   -> m [FilePath]
   -- ^ Resulting list of Sail source files.
-specSources mainFile = pure $ map (\x -> "spec" </> x <.> "sail")
+specSources mainFile = pure $ map (\x -> "src/spec" </> x <.> "sail")
   [ "setup", "basics", "scattered", fromMaybe "elfmain" mainFile ]
 
 -- | Top-level set of all rules for the build system.

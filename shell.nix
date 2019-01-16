@@ -50,7 +50,7 @@ let
   # nix-shell does not support passing these arguments directly. This is used
   # only by build.hs
   runghcWrapper = pkgs.writeShellScriptBin "runghc2" ''
-    exec runghc -i./mk/ $@
+    exec runghc -i./src/mk/ $@
   '';
 
   # --------------------------

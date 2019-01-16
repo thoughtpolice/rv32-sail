@@ -1,6 +1,6 @@
 # shake results
 /.shake/
-/_make/
+/build/
 
 # sail leftovers
 z3_problems
