@@ -1,0 +1,2 @@
+This instruction-set test firmware was cribbed from the
+[[https://github.com/cliffordwolf/picorv32][picorv32]] source code.
