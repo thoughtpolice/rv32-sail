@@ -1,14 +1,265 @@
-* rv32-sail - high-level simulator for a RV32IM Core
+* rv32-sail - high-level emulator for RV32IM core 🔥
 
-[[https://img.shields.io/badge/version-0.1pre-blue.svg]] [[https://img.shields.io/badge/license-MIT-blue.svg]]
+[[https://img.shields.io/badge/version-0.0pre-orange.svg]] [[https://img.shields.io/badge/license-MIT-blue.svg]]
 
-RISC-V simulator for the RV32IM core, written in [[https://www.cl.cam.ac.uk/~pes20/sail/][Sail]].
+[[https://risc-v.org][RISC-V]] software emulator for the RV32IM core, written in [[https://www.cl.cam.ac.uk/~pes20/sail/][Sail]] and compiled to a
+static emulator executable, using [[https://nixos.org/nix][Nix]]. It also includes a bunch of tools for
+doing bare-metal RISC-V software on top of the simulator easily.
+
+#+BEGIN_QUOTE
+*NOTE*: rv32-sail ships a RISC-V *software emulator*, which is an approximate
+representation of the CPU as a sequential software program. It is not
+"cycle-accurate" and can not model clocks, digital logic, power or area
+consumption of a physical RISC-V CPU in any way!
+#+END_QUOTE
 
 * Features
 
+- High-level RISC-V ISA emulator, written in Sail
+  - Clean code is paramount with lots of comments.
+  - High-level, type-safe functional-imperative description of RV32.
+  - High-level code compiled to optimized C for an executable emulator.
+  - The Sail instruction decoder is automatically generated from an
+    even higher-level spec describing the decoding layout for each
+    instruction.
+- Included demo code
+  - Full test firmware based on [[https://github.com/cliffordwolf/picorv32][picorv32]] firmware for end-to-end testing.
+- Robust build system and toolchain
+  - Uses Nix, so every dependency is taken care of for you.
+  - Robust build system written in [[https://shakebuild.com][Shake]] that's fast and highly accurate.
+  - Designed to be used incrementally and easy for contributors.
+- Included toolchain
+  - Loads raw ELF binaries that can be booted and executed directly.
+  - You can probably write /your own/ ELF binary!
+
+Note that ~rv32-sail~ is *not* designed to be packaged for Linux distributions,
+or used like -- or as an alternative to -- a real emulator such as QEMU. It is
+quite slow, and it is designed for correctness and as the basis for software
+stack development, with design flexibility in the simulator: it is much easier
+to write software than write RTL code (such as picorv32), and it is easier still
+to write Sail than hack on QEMU.
+
+The end goal of this project is to implement a full, robust emulator for an
+embedded RV32-based CPU with [[https://www.cl.cam.ac.uk/research/security/ctsrd/cheri/][CHERI extensions]], based on the paper /[[_][CheriRTOS: A
+Capability Model for Embedded Devices]]/, as well as an accompanying
+capability-first RTOS. (If we want to stir up our wild imaginations, such a
+device could be a pure open hardware/FOSS replacement for devices like the
+ESP32.)
+
 * Table of Contents :TOC_4_gh:
+- [[#rv32-sail---high-level-emulator-for-rv32im-core-][rv32-sail - high-level emulator for RV32IM core 🔥]]
+- [[#features][Features]]
+- [[#building][Building]]
+- [[#usage][Usage]]
+  - [[#running-the-test-firmware][Running the Test Firmware]]
+- [[#softwarefirmware-development][Software/Firmware Development]]
+- [[#hacking-the-core][Hacking the core]]
+  - [[#basic-high-level-overview][Basic high level overview]]
+  - [[#source-code-layout][Source code layout]]
+  - [[#build-system-shenanigans][Build system shenanigans]]
+  - [[#nix-nonsense][Nix nonsense]]
+- [[#faq][FAQ]]
+  - [[#why-write-this][Why write this?]]
+  - [[#why-is-the-simulator-called-cruise][Why is the simulator called "cruise"?]]
+  - [[#why-is-the-two-level-build-system-so-weird-why-do-i-need-nix][Why is the (two level) build system so weird? Why do I need Nix?]]
+  - [[#building-gcc-takes-a-while-can-i-skip-that][Building GCC takes a while, can I skip that?]]
+- [[#authors][Authors]]
+- [[#license][License]]
 
 * Building
+
+#+BEGIN_QUOTE
+*NOTE*: You must have [[https://nixos.org/nix][the Nix Package Manager]] installed in order to build the
+emulator! While you can install Sail and the dependencies yourself, this is the
+main development method and baseline system for reproducing issues, where tests
+are written, etc.
+
+If you are capable of executing ~sudo~ on your machine, then you can do a quick
+installation easily from your shell:
+
+#+BEGIN_SRC bash
+$ sh <(https://nixos.org/nix/install) --daemon
+#+END_SRC
+
+This should work on any modern Linux distribution with namespace support and
+systemd as the init system. Then you can log back into your user account --
+~nix~, ~nix-shell~ and other tools will now be available.
+
+In the future, I hope to also provide static binary distributions containing
+the emulator and test firmware, too.
+#+END_QUOTE
+
+Currently, the primary way to compile the emulator and firmware is to use the
+build system is by simply invoking it directly using the ~build.hs~ script,
+which is a [[https://shakebuild.com][Shake build system]] -- it will transparently use a ~nix-shell~ based
+"interactive environment" to obtain all dependencies. This makes interactive
+development of the emulator easy and building it very trivial.
+
+#+BEGIN_SRC bash
+$ git clone https://github.com/thoughtpolice/rv32-sail
+$ cd rv32-sail/
+$ ./build.hs -j
+#+END_SRC
+
+This will take some time to build the GCC cross compiler for bare-metal RISC-V,
+as well as the Sail toolchain. Afterwords, it will compile the emulator as well
+as some example firmware you can use. All of the build artifacts will be
+available under the ~./build/~ directory.
+
+If you want to control or invoke the underlying Sail toolchain directly (for
+example, to pass different options, or examine the build environment), simply
+run ~nix-shell~ instead:
+
+#+BEGIN_SRC
+$ nix-shell
+
+[nix-shell:~/sail-riscv32]$ sail -v
+...
+
+[nix-shell:~/sail-riscv32]$ riscv32-unknown-elf-gcc --version
+...
+#+END_SRC
+
+* Usage
+
+Once you've built the emulator and test/demo firmware, it will be available
+under the ~./build~ directory.
+
+** Running the Test Firmware
+
+The self-testing firmware is available under ~./build/selftest.elf~, and can be
+loaded immediately. At the end, the emulator will spit out some runtime
+statistics:
+
+#+BEGIN_SRC
+./build.hs -j
+./build/cruise build/selftest.elf
+...
+
+[Sail] Finished!
+[Sail] Executed Instructions: ...
+[Sail] Nanoseconds Elapsed:   ...
+[Sail] Approximate IPS:       ...
+#+END_SRC
+
+* Software/Firmware Development
+
+Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Donec hendrerit tempor
+tellus. Donec pretium posuere tellus. Proin quam nisl, tincidunt et, mattis
+eget, convallis nec, purus. Cum sociis natoque penatibus et magnis dis
+parturient montes, nascetur ridiculus mus. Nulla posuere. Donec vitae dolor.
+Nullam tristique diam non turpis. Cras placerat accumsan nulla. Nullam rutrum.
+Nam vestibulum accumsan nisl.
+
+* Hacking the core
+
+I've tried to make contributing easy and streamlined it as much as possible for
+contributors.
+
+** Basic high level overview
+
+** Source code layout
+
+The primary directories you need to understand are:
+
+- ~./mk~, which contains some Haskell modules for ~build.hs~
+- ~./src/spec~, which contains all the Sail code for the specification.
+- ~./src/t~, which contains all the tests.
+
+Everything else falls outside the primary raidus of the blast zone.
+
+Finally there is the Nix build infrastructure. See below for more on that.
+
+** Build system shenanigans
+
+The build system is written in Shake, so it's suggested you [[https://shakebuild.com/manual][read the manual]] to
+understand how it works.
+
+The core TL;DR is that Shake is a "dynamic" build system unlike Make: rather
+than declaring dependencies statically along with a target, you declare a target
+and can run arbitrary code, /then/ declare dependencies. Dependencies can be
+arbitrary values, and Shake has very precise dependency tracking with an array
+of built-in utilities: support for tracking file contents, environment
+variables, tool output, etc.
+
+The end result of these features is that the project-level build system is
+nearly magical and very robust and fast to respond to all changes.
+
+Currently, there is a startup penalty paid for running the build system under
+~nix-shell~. This will probably be rectified in the future, ideally by
+modularizing it a bit more and then compiling an executable, instead.
+
+** Nix nonsense
+
+While Shake is the project-level build system, Nix is the /package-level/ build
+system: it's what is used to distribute artifacts to end-users after the build
+system has done its job, and also to prepare the environment with all the tools
+we need (by running /their/ build systems).
+
+TODO FIXME: describe pinning, etc.
+
+* FAQ
+
+** Why write this?
+
+There is an alternative, [[https://github.com/rems-project/sail-riscv][hand-written RISC-V model]] written in Sail as part of
+the [[https://www.cl.cam.ac.uk/~pes20/rems/][REMS Project]]. The REMS design is focusing on a full 64-bit core that can
+boot Linux and seL4. My intentions are hopefully more modest, first aiming for
+basic RV32 support and possibly some user/supervisor mode support, and, eventual
+capability support in the spirit of CHERI (currently there is a [[https://github.com/CTSRD-CHERI/sail-cheri-mips][CHERI-MIPS]] Sail
+model, however; the RISC-V CHERI specification is relatively recent.)
+
+But mainly, I found Sail and the latest version seemed really capable and cool,
+so I designed to write this.
+
+** Why is the simulator called "cruise"?
+
+Because you're sailing on a cruise ship.
+
+** Why is the (two level) build system so weird? Why do I need Nix?
+
+Because the problem it's solving is complex. Also, I am lazy, and it's easier to
+do this right once than solve it a bunch of times.
+
+In reality, Sail and associated RISC-V tooling is relatively new -- combined
+with that, you need external 3rd party dependencies like linksem, ott, lem, Z3,
+a cross compiler, etc. This kind of stuff is a nightmare for users to get right
+and it's often very easy for them to screw something up along the way (configure
+the toolchain wrong, incorrect versions, newer dependencies aren't available in
+their distribution, etc). You also often need to manage like 3 package managers
+(at minimum) in some weird ritual to do all these things normally.
+
+This makes just doing things like writing firmware and models and getting your
+feet wet tedious -- and it makes it especially frustrating for users who want to
+try to understand the core ideas behind the project.
+
+Instead, I chose to just do One Big Huge Ritual and sacrifice everything to Nix.
+It consumes everything and makes everyone happy. It essentially vendors every
+dependency for the project independent of the host Linux system and provides
+hermetic builds. It's like Google's [[https://bazel.build][Bazel]], if it were a package manager for
+arbitrary software, including things like OPAM, arbitrary C code (Z3), and
+Haskell code. The way I've set things up also ensures that everyone -- no matter
+what Linux distribution they're running on, whatever time -- should hopefully
+get identical results (more or less), making real reproduction and reuse much,
+much easier. It will work the same today and tomorrow and the next week every
+time (hopefully).
+
+The Haskell side of things is a bit murkier, but basically, Shake is very robust
+in the long term and I plan on refining this project for a while, so investing
+in a long-term solution with some up-front work is nice. It also comes with a
+lot more guarantees and is generally a lot more flexible than Make.
+
+Finally, because Nix sufficiently packages all the necessary dependencies, and
+because this is designed to be a platform for testing software rather than
+end-user distribution, the use of Haskell is nearly invisible for most users,
+which was a prime concern. (If this was a random software project designed for
+true end-user packaging/use, like a software library, it would be a different
+story.)
+
+** Building GCC takes a while, can I skip that?
+
+In the future, I hope to set up a [[https://cachix.org][Cachix]] cache containing all the needed build
+dependencies. Stay tuned for that.
 
 * Authors
 
