@@ -1,0 +1,11 @@
+# shake results
+/.shake/
+/_make/
+
+# sail leftovers
+z3_problems
+
+# misc
+
+*~
+*\#

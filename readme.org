@@ -1,0 +1,19 @@
+* rv32-sail - high-level simulator for a RV32IM Core
+
+[[https://img.shields.io/badge/version-0.1pre-blue.svg]] [[https://img.shields.io/badge/license-MIT-blue.svg]]
+
+RISC-V simulator for the RV32IM core, written in [[https://www.cl.cam.ac.uk/~pes20/sail/][Sail]].
+
+* Features
+
+* Table of Contents :TOC_4_gh:
+
+* Building
+
+* Authors
+
+See [[https://raw.githubusercontent.com/thoughtpolice/rv32-sail/master/AUTHORS.txt][AUTHORS.txt]] for the list of contributors to the project.
+
+* License
+
+MIT. See [[https://raw.githubusercontent.com/thoughtpolice/rv32-sail/master/COPYING][COPYING]] for precise terms of copyright and redistribution.
