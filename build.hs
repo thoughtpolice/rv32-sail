@@ -25,7 +25,7 @@ import           Development.Shake.FilePath
 
 -- local imports
 import           Options ( myShakeOptions, myFlags )
-import           Sail    ( SailBackend(..), sailSimRules )
+import           Sail    ( SailBackend(..), sailSimRules, sailGenHexBits )
 
 --------------------------------------------------------------------------------
 -- Basics
@@ -47,28 +47,49 @@ specSources
   -- selected.
   -> m [FilePath]
   -- ^ Resulting list of Sail source files.
-specSources mainFile = pure $ map (\x -> "src/spec" </> x <.> "sail")
-  [ "setup", "basics", "scattered", fromMaybe "elfmain" mainFile ]
+specSources mainFile = pure $
+    -- prelimary setup. these modules are fairly reusable
+  [ src "setup", gen "hexbits" ] <>
+    -- riscv specific modules
+  map src [ "basics", "rv32", "scattered" ] <>
+    -- chosen loader entry point
+  map src [ fromMaybe "elfmain" mainFile ]
+  where
+
+    -- source files which are hand-written (live under ./src)
+    src x = "src/spec" </> x <.> "sail"
+    -- source files which are generated (live under ./build)
+    gen x = bdir x <.> "sail"
 
 -- | Top-level set of all rules for building the emulator.
 emulatorRules :: Rules ()
 emulatorRules = do
   -- main emulator: 'cruise' C backend, with default ELF loader
-  specSources Nothing >>= sailSimRules SailBackendC (bdir "cruise")
+  sources <- specSources Nothing
+  sailSimRules SailBackendC     (bdir "cruise.opt") sources
+  sailSimRules SailBackendOCaml (bdir "cruise")     sources
+
+  -- generate hexbits.sail
+  bdir "hexbits.sail" %> sailGenHexBits
 
 --------------------------------------------------------------------------------
 -- Tests
 
 getInstrTestFiles :: Action [FilePath]
-getInstrTestFiles = getDirectoryFiles "src" [ "/t/tests/*.S" ]
+getInstrTestFiles = getDirectoryFiles "src"
+  [ "/t/tests/*.S"
+  ]
 
 getFirmwareTestFiles :: Action [FilePath]
 getFirmwareTestFiles = getDirectoryFiles "src"
-  [ "/t/firmware/*.c", "/t/firmware/*.S" ]
+  [ "/t/firmware/*.c"
+  , "/t/firmware/*.S"
+  ]
 
 testRules :: Rules ()
 testRules = do
-
+  -- takeBaseName doesn't drop *all* extensions, e.g. foo.asm.o only
+  -- becomes foo.asm
   let takeBaseName1 = dropExtensions . takeBaseName
 
   -- assembles the files in ./src/t/tests/
@@ -85,7 +106,7 @@ testRules = do
   -- links rv32 objects together
   let rvld out objs = do
         let ldsect = "src/t/firmware/sections.lds"
-            ldmap  = "src/t/firmware/firmware.map"
+            ldmap  = bdir (takeBaseName out <.> "map")
             flags  = [ "-Wl,-Bstatic,-T,", ldsect, ",-Map,", ldmap, ",--strip-debug" ]
 
         need (ldsect:objs)
@@ -125,7 +146,8 @@ testRules = do
         fw_objs  = [ bdir v -<.> "asm.o" | v <- fw_srcs, takeExtensions v == ".S" ]
                 <> [ bdir v -<.> "c.o" | v <- fw_srcs, takeExtensions v == ".c" ]
 
-    rvld out (fw_objs <> asm_objs)
+    unit $ rvld out (fw_objs <> asm_objs)
+    cmd "chmod -x" out
 
   -- Test rules
   bdir "t/tests/*.asm.o" %> \out -> tasm out (takeBaseName1 out)
@@ -141,7 +163,8 @@ main = shakeArgsWith myShakeOptions myFlags $ \_ targets -> pure $ Just $ do
   want (if not (null targets) then targets else [ "all" ])
 
   -- phony rules which are shorthands
-  "all" ~> need [ bdir "cruise", bdir "selftest.elf" ]
+  let top = map bdir [ "cruise", "cruise.opt", "selftest.elf" ]
+  "all" ~> need top
   "clean" ~> removeFilesAfter (bdir mempty) ["//*"]
 
   -- all main, top-level rule sets

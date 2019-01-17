@@ -35,10 +35,32 @@ sailc
   -> [FilePath]
   -- ^ Input .sail files. Ordering matters.
   -> Action ()
-sailc out srcs = cmd [ FileStdout out ] "sail -O -c" srcs
+sailc out srcs = cmd [ FileStdout out ] "sail -no_warn -O -c" srcs
+
+sailcaml
+  :: FilePath
+  -> [FilePath]
+  -> Action ()
+sailcaml out srcs = cmd
+  [ EchoStdout False
+  , Cwd (takeDirectory1 out)
+  ]
+  "sail -no_warn -ocaml"
+    [ "-o", dropDirectory1 out ]
+    [ "-ocaml_build_dir", "ocaml" ]
+    (map (".." </>) srcs)
 
 --------------------------------------------------------------------------------
 -- Sail utilities
+
+-- | Generate some tedious code for using Sail 'mapping clause assembler'
+-- directives. Hopefully this will be removed one day.
+sailGenHexBits
+  :: FilePath
+  -> Action ()
+sailGenHexBits out = do
+  let src = "src/etc/gen_hexbits.py"
+  need [ src ] >> cmd [ FileStdout out ] "python3" src
 
 -- | Get the Sail library directory from the @$SAIL_DIR@ environment variable.
 -- If this variable is not set, the build will fail.
@@ -65,7 +87,7 @@ sailSimRules
 
 -- C backend
 sailSimRules SailBackendC bin srcs = do
-  let csrc = bin <.> "c"
+  let csrc  = bin <.> "c"
 
   -- compile C -> binary, with Sail runtime
   bin %> \out -> do
@@ -83,4 +105,5 @@ sailSimRules SailBackendC bin srcs = do
   csrc %> \out -> need srcs >> sailc out srcs
 
 -- TODO FIXME: OCaml backend
-sailSimRules backend _ _ = fail $ "NIH: backend " <> show backend
+sailSimRules SailBackendOCaml bin srcs = do
+  bin %> \out -> need srcs >> sailcaml out srcs

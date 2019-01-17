@@ -12,24 +12,49 @@ register InstrCount : int
 /* -------------------------------------------------------------------------- */
 /* -- Fetch driver ---------------------------------------------------------- */
 
-val elf_fetch : unit -> unit
-function elf_fetch () = {
-  PC = NextPC;
-  // NextPC = PC + 4;
+union FetchResult = {
+  FetchedBase       : xword_t,
+  FetchedCompressed : xhalf_t,
+  FetchError        : (exception, xlen_t)
+}
+
+/* Non-compressed instructions have low-half LSBs of 0x00 */
+function isCompressed(h : xhalf_t) -> bool = not_bool(h[1..0] == 0b11)
+
+/* Prefetch a RISC-V instruction -- importantly, predecode the given
+** PC to determine if we have a compressed instruction or not.
+*/
+val elf_prefetch : xlen_t -> FetchResult effect {rmem, rreg, wreg}
+function elf_prefetch (pc) = {
   InstrCount = InstrCount + 1;
 
-  let iaddr = MEM(PC, 4);
-  let instr = decode(iaddr);
+  let ilo = MEM(pc, 2);
+  if isCompressed(ilo) then FetchedCompressed(ilo)
+  else {
+    let ihi = MEM(pc + 2, 2);
+    FetchedBase(append(ihi, ilo))
+  }
+}
 
-  match instr {
-    Some(d) => (),
-    None()  => {
-      /* decode() should never return none; see scattered.sail */
-      print_endline("elf_fetch(): impossible case! Decoding returned None?!");
-      
+val elf_fetch : unit -> unit effect {rmem, rreg, wreg}
+function elf_fetch () = {
+  match elf_prefetch(NextPC) {
+    FetchError(ex, epc) => {
+      ()
+    },
+
+    FetchedCompressed(h) => {
+      match decode_comp(h) {
+        _ => ()
+      }
+    },
+
+    FetchedBase(w) => {
+      match decode_base(w) {
+        _ => ()
+      }
     }
-  };
-  ();
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -37,10 +62,6 @@ function elf_fetch () = {
 
 val elf_execute : unit -> bool
 function elf_execute () = {
-  let pc_v = PC;
-
-  // test
-  // print_endline("test PC:" ^-^ hex_str(pc_v));
 
   not_bool (cycle_limit_reached());
 }
@@ -51,7 +72,7 @@ function elf_execute () = {
 /* initialize_regs(pc): initialize the register file, and set the initial
 ** program load point to the specified address.
 */
-val initialize_regs : xlen_t -> unit
+val initialize_regs : xlen_t -> unit effect {wreg}
 function initialize_regs(pc) = {
   NextPC = pc;
   InstrCount = 0;
@@ -62,7 +83,8 @@ function initialize_regs(pc) = {
 ** and it's been reached, this function returns false. otherwise, it always
 ** returns true.
 */
-val churn : unit -> bool
+
+val churn : unit -> bool effect {rmem, rreg, wreg}
 function churn () = {
   elf_fetch(); elf_execute();
 }
@@ -71,7 +93,8 @@ function churn () = {
 ** print_stats(start_time): Print some execution stats about the current
 ** CPU, given the time when the CPU started up.
 */
-val print_stats : int -> unit
+
+val print_stats : int -> unit effect {rreg}
 function print_stats(start_time) = {
   end_time = get_time_ns();
   elapsed  = end_time - start_time;
@@ -81,6 +104,7 @@ function print_stats(start_time) = {
   print_int("[Sail] Executed Instructions: ", InstrCount);
   print_int("[Sail] Nanoseconds Elapsed:   ", elapsed);
   print_int("[Sail] Approximate IPS:       ", ips);
+  ()
 }
 
 /*
@@ -88,7 +112,7 @@ function print_stats(start_time) = {
 ** CPU occasionally, if 'verbose' is true, at a rate of every 'rate'
 ** instructions executed. start_time should be when the CPU started
 */
-val dump_info : (bool, int, int) -> unit
+val dump_info : (bool, int, int) -> unit effect {rreg}
 function dump_info(verbose, dump_rate, start_time) = {
   if (mod(InstrCount, dump_rate) == 0) & verbose then {
     print_endline("");
@@ -101,18 +125,20 @@ function dump_info(verbose, dump_rate, start_time) = {
 ** if asked. The arguments for the executable will already be parsed by this
 ** point in the runtime system.
 */
-val main : unit -> unit
+val main : unit -> unit effect { rmem, rreg, wreg }
 function main() = {
-  let verbosity  = get_verbosity();
+  // TODO FIXME: verbosity doesn't work with OCaml?
+  //let verbosity  = get_verbosity();
+  //let verbose0   = verbosity[0] == bitone;
+
   let elf_pc     = elf_entry();
   let start_time = get_time_ns();
-  let verbose0   = verbosity[0] == bitone;
 
   print_endline("[Sail] ELF Initial PC: " ^-^ hex_str(elf_pc));
-  initialize_regs(to_bits(64, elf_pc));
+  initialize_regs(to_bits(32, elf_pc));
 
   print_endline("[Sail] Executing...");
-  while (churn ()) do { dump_info(verbose0, 10000000, start_time) };
+  while (churn ()) do { dump_info(false, 10000000, start_time) };
 
   print_endline("\n[Sail] Finished!");
   print_stats(start_time);

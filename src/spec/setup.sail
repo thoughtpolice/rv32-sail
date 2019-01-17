@@ -24,15 +24,6 @@ $include <trace.sail>
 infixl 9 ^-^
 
 /* -------------------------------------------------------------------------- */
-/* -- Basic Types and Operators --------------------------------------------- */
-
-infixr 1 -->
-type operator -->('p: Bool, 'q: Bool) -> Bool = not('p) | 'q
-
-infix 1 <-->
-type operator <-->('p: Bool, 'q: Bool) -> Bool = ('p --> 'q) & ('q --> 'p)
-
-/* -------------------------------------------------------------------------- */
 /* -- FFI C Bindings -------------------------------------------------------- */
 
 val get_verbosity = { c: "sail_get_verbosity" } : unit -> bits(64)
@@ -41,6 +32,59 @@ val "get_cycle_count"     : unit -> int
 val "get_time_ns"         : unit -> int
 val "cycle_count"         : unit -> unit
 val "cycle_limit_reached" : unit -> bool
+function cycle_limit_reached () = false
+
+/* -------------------------------------------------------------------------- */
+/* -- Assembler clause utilities -------------------------------------------- */
+
+// TODO FIXME: why aren't... all of these in the prelude? too new?
+
+val spc : unit <-> string
+val opt_spc : unit <-> string
+val def_spc : unit <-> string
+
+val hex_bits    : forall 'n . (atom('n), bits('n)) <-> string
+val hex_bits_16 : bits(16) <-> string
+val hex_bits_32 : bits(32) <-> string
+
+val "string_length"     : string -> nat
+val "string_startswith" : (string, string) -> bool
+val "string_drop"       : (string, nat) -> string
+val "string_take"       : (string, nat) -> string
+val "string_length"     : string -> nat
+val maybe_int_of_prefix = "maybe_int_of_prefix" : string -> option((int, nat))
+val maybe_nat_of_prefix = "maybe_nat_of_prefix" : string -> option((nat, nat))
+val maybe_int_of_string = "maybe_int_of_string" : string -> option(int)
+
+val string_append = { c: "concat_str", _: "string_append" } : (string, string) -> string
+
+// TODO: why isn't eq_string overloaded for this in prelude, at least?
+overload operator == = {eq_int, eq_bit, eq_bool, eq_unit, eq_vec, eq_string, eq_real}
+
+val n_leading_spaces : string -> nat
+function n_leading_spaces s =
+  match s {
+    "" => 0,
+    _ => match string_take(s, 1) {
+      " " => 1 + n_leading_spaces(string_drop(s, 1)),
+      _ => 0
+    }
+  }
+
+val spc_forwards : unit -> string
+function spc_forwards () = " "
+val spc_backwards : string -> unit
+function spc_backwards s = ()
+val spc_matches_prefix : string -> option((unit, nat))
+function spc_matches_prefix s = {
+  let n = n_leading_spaces(s);
+  match n {
+    0 => None(),
+    _ => Some((), n)
+  }
+}
+
+val "decimal_string_of_bits" : forall 'n. bits('n) -> string
 
 /* -------------------------------------------------------------------------- */
 /* -- Utility functions ----------------------------------------------------- */

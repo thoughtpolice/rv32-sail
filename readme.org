@@ -1,9 +1,9 @@
-* rv32-sail - high-level emulator for RV32IM core 🔥
+* rv32-sail - high-level emulator for RV32IMAC core 🔥
 
 [[https://img.shields.io/badge/version-0.0pre-orange.svg]] [[https://img.shields.io/badge/license-MIT-blue.svg]]
 
-[[https://risc-v.org][RISC-V]] software emulator for the RV32IM core, written in [[https://www.cl.cam.ac.uk/~pes20/sail/][Sail]] and compiled to a
-static emulator executable, using [[https://nixos.org/nix][Nix]]. It also includes a bunch of tools for
+[[https://risc-v.org][RISC-V]] software emulator for the RV32IMAC core, written in [[https://www.cl.cam.ac.uk/~pes20/sail/][Sail]] and compiled to
+a static emulator executable, using [[https://nixos.org/nix][Nix]]. It also includes a bunch of tools for
 doing bare-metal RISC-V software on top of the simulator easily.
 
 #+BEGIN_QUOTE
@@ -19,6 +19,7 @@ consumption of a physical RISC-V CPU in any way!
   - Clean code is paramount with lots of comments.
   - High-level, type-safe functional-imperative description of RV32.
   - High-level code compiled to optimized C for an executable emulator.
+    - There's also a reference emulator with the OCaml backend, too.
   - The Sail instruction decoder is automatically generated from an
     even higher-level spec describing the decoding layout for each
     instruction.
@@ -47,7 +48,7 @@ device could be a pure open hardware/FOSS replacement for devices like the
 ESP32.)
 
 * Table of Contents :TOC_4_gh:
-- [[#rv32-sail---high-level-emulator-for-rv32im-core-][rv32-sail - high-level emulator for RV32IM core 🔥]]
+- [[#rv32-sail---high-level-emulator-for-rv32imac-core-][rv32-sail - high-level emulator for RV32IMAC core 🔥]]
 - [[#features][Features]]
 - [[#building][Building]]
 - [[#usage][Usage]]

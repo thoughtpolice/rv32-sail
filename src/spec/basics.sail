@@ -6,7 +6,10 @@
 /* -------------------------------------------------------------------------- */
 /* -- Basic Types ----------------------------------------------------------- */
 
-type xlen_t = bits(64)
+type xlen_t = bits(32)
+
+type xword_t = bits(32)
+type xhalf_t = bits(16)
 
 type regno ('n : Int), 0 <= 'n < 32 = atom('n)
 
@@ -28,7 +31,7 @@ register Xs : vector(32, dec, xlen_t)
 
 /* read gp reg */
 val rX : forall 'n, 0 <= 'n < 32. regno('n) -> xlen_t effect {rreg}
-function rX 0            = 0x0000000000000000
+function rX 0            = 0x00000000
 and      rX (r if r > 0) = Xs[r]
 
 /* write gp reg(r, val) */
@@ -44,11 +47,11 @@ overload X = { rX, wX }
 
 val __RISCV_read : forall 'n. (xlen_t, atom('n)) -> bits(8 * 'n) effect {rmem}
 function __RISCV_read(addr, width) =
-  read_ram(64, width, 0x0000_0000_0000_0000, addr)
+  read_ram(32, width, 0x0000_0000, addr)
 
 val __RISCV_write : forall 'n. (xlen_t, atom('n), bits(8 * 'n)) -> unit effect {wmem}
 function __RISCV_write(addr, width, data) =
-  let _ = write_ram(64, width, 0x0000_0000_0000_0000, addr, data)
+  let _ = write_ram(32, width, 0x0000_0000, addr, data)
   in ()
 
 val MEMr : forall 'n. (xlen_t, atom('n)) -> bits(8 * 'n) effect {rmem}
@@ -58,15 +61,21 @@ function MEMr (addr, width) = __RISCV_read(addr, width)
 overload MEM = { MEMr, MEMw }
 
 /* -------------------------------------------------------------------------- */
-/* -- AST, Decode, and Execute signatures ----------------------------------- */
+/* -- AST, Assembly, Decode, and Execute signatures ------------------------- */
 
 scattered union ast
 
-val decode : bits(32) -> option(ast) effect pure
-scattered function decode
+val assembly : ast <-> string
+scattered mapping assembly
 
-val execute : ast -> unit effect {undef}
-scattered function decode
+val encdec_base : ast <-> bits(32)
+scattered mapping encdec_base
+
+val encdec_comp : ast <-> bits(16)
+scattered mapping encdec_comp
+
+val execute : ast -> unit
+scattered function execute
 
 /* -------------------------------------------------------------------------- */
 /* -- Exceptions ------------------------------------------------------------ */

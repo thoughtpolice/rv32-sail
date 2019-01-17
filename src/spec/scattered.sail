@@ -6,20 +6,22 @@
 /* -------------------------------------------------------------------------- */
 /* -- Close scattered defs with an exception clause ------------------------- */
 
-union clause ast = RI : unit
+/* -- Close all the scattered definitions -- */
 
-/* -- Final clause for 'decode ' which simply does nothing -- */
-function clause decode _ = Some(RI())
-
-/* -- c.f. 'execute' -- */
-function clause execute (RI()) = {
-   throw (EInvalidInstr())
-}
-
-/* -- Close everything -- */
-end ast
-end decode
 end execute
+end encdec_comp
+end encdec_base
+end assembly
+end ast
+
+val cast print_insn : ast -> string
+function print_insn i = assembly(i)
+
+val decode_base : bits(32) -> ast effect pure
+function decode_base bv = encdec_base(bv)
+
+val decode_comp : bits(16) -> ast effect pure
+function decode_comp bv = encdec_comp(bv)
 
 /* -------------------------------------------------------------------------- */
-/* -- El Fin (setup.sail) --------------------------------------------------- */
+/* -- El Fin (scattered.sail) ----------------------------------------------- */

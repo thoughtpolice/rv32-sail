@@ -50,7 +50,7 @@ let
   # nix-shell does not support passing these arguments directly. This is used
   # only by build.hs
   runghcWrapper = pkgs.writeShellScriptBin "runghc2" ''
-    exec runghc -i./src/mk/ $@
+    exec runghc -isrc/mk $@
   '';
 
   # --------------------------
@@ -139,13 +139,13 @@ let
     # Sail architectural definition language
     sail = ocamlPackages.buildOcaml rec {
       name = "sail";
-      version = "0.6";
+      version = with builtins; "0.7pre_${substring 0 7 src.rev}";
 
       src = pkgs.fetchFromGitHub {
         owner  = "rems-project";
         repo   = "${name}";
-        rev    = "refs/tags/${version}";
-        sha256 = "1cwfgmzsgc5cwb28p7h442nd5c60sqqkfyjff0cvjrc7zr7gfr5f";
+        rev    = "a5e2b3b7411f630b6d2337402330e13862b5666a";
+        sha256 = "1l67dadxr09yiphvj4y2a060rmh64bpnq74r1g82qi0skhbgg9vf";
       };
 
       # SAIL_DIR is used by some associated CPU models to find the share
@@ -179,7 +179,7 @@ let
   # environment.
   buildInputs =
     (with jobs; [ lem linksem sail riscv-toolchain ]) ++
-    (with pkgs; [ gcc ott z3 zlib wget dtc ]) ++
+    (with pkgs; [ gcc ott z3 zlib wget dtc python3 ]) ++
     [ runghcWrapper haskellInputs ] ++
     (ocamlDeps)
     ;
