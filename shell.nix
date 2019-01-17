@@ -13,19 +13,13 @@
   # The default value, null, uses a pre-determined snapshot of the nixpkgs
   # repository.
 , nixpkgs ? null
+
+  # Nixpkgs config, in case you want to override something.
+, config ? {}
 }:
 
 let
-  # ------------------------------
-  # Nixpkgs import
-
-  # If the user specified a path with --arg nixpkgs, then import from there;
-  # otherwise, import from a pre-specified tarball download.
-  pkgs = with builtins;
-    import (if nixpkgs != null then nixpkgs else fetchTarball {
-      url    = "https://github.com/NixOS/nixpkgs/archive/564653f91d7031495a0b955c744a578352f34576.tar.gz";
-      sha256 = "0nqvxl8l2ahggad8rsssw8p1p3i6sn278xiwcc70352a1c8g917x";
-    }) {};
+  pkgs = import ./nix/bootstrap.nix { inherit nixpkgs config; };
 in
 
 # Bring the chosen package set into scope
@@ -53,51 +47,13 @@ let
     exec runghc -isrc/mk $@
   '';
 
-  # --------------------------
-  # RISC-V GCC Toolchain Setup
-
-  # risc-v toolchain source code. TODO FIXME: this should be replaced with
-  # upstream versions of GCC. in the future we could also include LLVM (the
-  # upstream nixpkgs LLVM expression should be built with it in time)
-  riscv-toolchain-ver = "8.2.0";
-  riscv-src = pkgs.fetchFromGitHub {
-    owner  = "riscv";
-    repo   = "riscv-gnu-toolchain";
-    rev    = "c3ad5556197e374c25bc475ffc9285b831f869f8";
-    sha256 = "1j9y3ai42xzzph9rm116sxfzhdlrjrk4z0v4yrk197j72isqyxbc";
-    fetchSubmodules = true;
-  };
-
-  # given an architecture like 'rv32i', this will generate the given
-  # toolchain derivation based on the above source code.
-  make-riscv-toolchain = arch:
-    stdenv.mkDerivation rec {
-      name    = "riscv-${arch}-toolchain-${version}";
-      version = "${riscv-toolchain-ver}-${builtins.substring 0 7 src.rev}";
-      src     = riscv-src;
-
-      configureFlags   = [ "--with-arch=${arch}" ];
-      installPhase     = ":"; # 'make' installs on its own
-      hardeningDisable = [ "all" ];
-      enableParallelBuilding = true;
-
-      # Stripping/fixups break the resulting libgcc.a archives, somehow.
-      # Maybe something in stdenv that does this...
-      dontStrip = true;
-      dontFixup = true;
-
-      nativeBuildInputs = with pkgs; [ curl gawk texinfo bison flex gperf ];
-      buildInputs = with pkgs; [ libmpc mpfr gmp expat ];
-    };
-
   # -----------------------------
   # Jobs built in this expression.
   # This is mostly to improve clarity, i.e. see where 'lem' comes from.
 
   jobs = {
-
     # RISC-V toolchain
-    riscv-toolchain = make-riscv-toolchain riscv-arch;
+    riscv-toolchain = import ./nix/riscv-gcc.nix { inherit pkgs riscv-arch; };
 
     # "Lem semantic definition language". Needed by Sail.
     lem = ocamlPackages.buildOcaml rec {
