@@ -1,5 +1,6 @@
 { config ? {}
 , nixpkgs ? null
+, system ? builtins.currentSystem
 }:
 
 let
@@ -7,4 +8,4 @@ let
   pkgs = if nixpkgs != null then nixpkgs else builtins.fetchTarball {
     inherit (json) url sha256;
   };
-in import pkgs  { inherit config; }
+in import pkgs  { inherit config system; }

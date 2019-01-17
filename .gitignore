@@ -1,3 +1,6 @@
+# nix
+/result*
+
 # shake results
 /.shake/
 /build/
