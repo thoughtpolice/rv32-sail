@@ -52,7 +52,7 @@ let
   # Write out a stupid wrapper for 'runghc' which sets the include path to
   # include the ./mk directory. This is to make the build system nicer, because
   # nix-shell does not support passing these arguments directly. This is used
-  # only by build.hs
+  # only by bake.hs
   runghcWrapper = pkgs.writeShellScriptBin "runghc2" ''
     exec runghc -isrc/mk $@
   '';
@@ -106,7 +106,7 @@ let
       buildInputs = [ haskellInputs ];
 
       buildPhase = ''
-        ghc --make -isrc/mk build.hs -o bake -threaded -rtsopts "-with-rtsopts=-I0 -qg"
+        ghc --make -isrc/mk bake.hs -o bake -threaded -rtsopts "-with-rtsopts=-I0 -qg"
       '';
       installPhase = ''
         mkdir -p $out/bin

@@ -91,7 +91,7 @@ the emulator and test firmware, too.
 #+END_QUOTE
 
 Currently, the primary way to compile the emulator and firmware is to use the
-build system is by simply invoking it directly using the ~build.hs~ script,
+build system is by simply invoking it directly using the ~bake.hs~ script,
 which is a [[https://shakebuild.com][Shake build system]] -- it will transparently use a ~nix-shell~ based
 "interactive environment" to obtain all dependencies. This makes interactive
 development of the emulator easy and building it very trivial.
@@ -99,7 +99,7 @@ development of the emulator easy and building it very trivial.
 #+BEGIN_SRC bash
 $ git clone https://github.com/thoughtpolice/rv32-sail
 $ cd rv32-sail/
-$ ./build.hs -j
+$ ./bake.hs -j
 #+END_SRC
 
 This will take some time to build the GCC cross compiler for bare-metal RISC-V,
@@ -133,8 +133,8 @@ loaded immediately. At the end, the emulator will spit out some runtime
 statistics:
 
 #+BEGIN_SRC
-./build.hs -j
-./build/cruise build/selftest.elf
+./bake.hs -j
+./build/cruise.opt -e build/selftest.elf
 ...
 
 [Sail] Finished!
@@ -163,7 +163,7 @@ contributors.
 
 The primary directories you need to understand are:
 
-- ~./mk~, which contains some Haskell modules for ~build.hs~
+- ~./mk~, which contains some Haskell modules for ~bake.hs~
 - ~./src/spec~, which contains all the Sail code for the specification.
 - ~./src/t~, which contains all the tests.
 
