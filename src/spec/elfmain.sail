@@ -66,6 +66,7 @@ function elf_fetch () = {
           ()
         },
         Some(i) => {
+          print_endline(i);
           NextPC = NextPC + 4;
           ()
         }
@@ -151,19 +152,10 @@ function main() = {
   let elf_pc     = elf_entry();
   let start_time = get_time_ns();
 
-  print_endline("[Sail] ELF Initial PC: " ^-^ hex_str(elf_pc));
   initialize_regs(to_bits(32, elf_pc));
-
-  print_endline(MUL(to_bits(5,8),to_bits(5,0),to_bits(5,9)));
-  print_endline(LB(to_bits(12,8),to_bits(5,15),to_bits(5,14)));
-  print_endline(SB(to_bits(7,8),to_bits(5,0),to_bits(5,9),to_bits(5,15)));
-  print_endline(LUI(to_bits(20,1337),to_bits(5,15)));
-  print_endline(FENCE(to_bits(4,5),to_bits(4,3)));
-  print_endline(FENCE_I());
-  print_endline(EBREAK());
-  print_endline(ECALL());
-
+  print_endline("[Sail] ELF Initial PC: " ^-^ hex_str(elf_pc));
   print_endline("[Sail] Executing...");
+
   while (churn ()) do { dump_info(verbose0, 10000000, start_time) };
 
   print_endline("\n[Sail] Finished!");
