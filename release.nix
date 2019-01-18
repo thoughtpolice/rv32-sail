@@ -106,11 +106,12 @@ let
       name = "bake-${version}";
       inherit version;
 
-      src = lib.cleanSource ./.;
+      src = lib.cleanSource ./src/mk;
       buildInputs = [ haskellInputs ];
 
       buildPhase = ''
-        ghc --make -isrc/mk bake.hs -o bake -threaded -rtsopts "-with-rtsopts=-I0 -qg"
+        ghc --make -O1 -o bake Bake.hs -main-is Bake.main \
+          -threaded -rtsopts "-with-rtsopts=-I0 -qg"
       '';
       installPhase = ''
         mkdir -p $out/bin
