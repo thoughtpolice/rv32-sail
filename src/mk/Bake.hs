@@ -19,9 +19,10 @@ import           Development.Shake
 import           Development.Shake.FilePath
 
 -- local imports
+import           CC
+import           Decoder ( decoderFrontend )
 import           Options ( myShakeOptions, myFlags )
 import           Sail    ( SailBackend(..), sailSimRules, sailGenHexBits )
-import           Decoder ( decoderFrontend )
 
 --------------------------------------------------------------------------------
 -- Basics
@@ -78,61 +79,58 @@ emulatorRules = do
 
 --------------------------------------------------------------------------------
 
-rvcc1 :: [ String ] -> String -> FilePath -> [ FilePath ] -> [ String ] -> Action ()
-rvcc1 mode arch out src extra = do
-  need src
-  cmd ("riscv32-unknown-elf-gcc -march=" <> arch)
-    [ "-Os", "-pedantic", "-std=c11" ]
-    [ "-Werror", "-Wall", "-Wextra", "-Wshadow", "-Wundef"
-    , "-Wpointer-arith", "-Wcast-qual", "-Wcast-align", "-Wwrite-strings"
-    , "-Wredundant-decls", "-Wstrict-prototypes", "-Wmissing-prototypes"
-    ]
-    [ "-ffreestanding", "-nostdlib" ]
-    mode [ "-o", out ] src extra
-
 rvcc :: String -> FilePath -> Action ()
-rvcc arch out =
-  let objectToSource = dropDirectory1 . dropExtension
-  in rvcc1 [ "-c" ] arch out [ objectToSource out ] []
+rvcc arch out = cc src out
+  where
+    src = dropDirectory1 (dropExtension out)
+    cc  = cc' defaultCcParams
+      { ccChoice = GCC, ccPrefix = HostPrefix "riscv32-unknown-elf-"
+      , ccMarch  = Just arch, ccLang = C11, ccOpt = Size
+      , ccWarnings = [ "error", "all", "extra", "shadow", "undef"
+                     , "pointer-arith", "cast-qual", "cast-align"
+                     , "write-strings", "redundant-decls", "strict-prototypes"
+                     , "missing-prototypes"
+                     ]
+      , ccFreestanding = True
+      }
 
 rvld :: String -> FilePath -> [FilePath] -> Action ()
-rvld arch out src = do
-  libfirm <- libfirmObjs
-  need [ lds ]
-  rvcc1 mempty arch out (src ++ libfirm) [ flags ]
-  where lds = "src/libfirm/sections.lds"
-        ldm = out -<.> "map"
-        flags = "-Wl,-Bstatic,-T," <> lds <> ",-Map," <> ldm <> ",--strip-debug"
+rvld arch out srcs = need [ lds ] >> libfirmObjs >>= \f -> ld (srcs ++ f) out
+  where
+    ( lds, ldm ) = ( "src/libfirm/sections.lds", out -<.> "map" )
+    ld = ld' defaultCcParams
+      { ccChoice = GCC, ccPrefix = HostPrefix "riscv32-unknown-elf-"
+      , ccMarch  = Just arch
+      , ccFreestanding = True
+      , ccLdFlags = [ "-Bstatic", "-T", lds, "-Map", ldm, "--strip-debug" ]
+      }
 
 --------------------------------------------------------------------------------
 -- Demos
 
+ccObjsFromSources :: FilePath -> Action [FilePath]
+ccObjsFromSources path = sourcesToObjects <$> getDirectoryFiles "" paths
+  where paths = [ path </> "*.S", path </> "*.c" ]
+        sourceToObject x = bdir (x <.> "o")
+        sourcesToObjects = map sourceToObject
+
 libfirmObjs :: Action [FilePath]
-libfirmObjs = do
-  let s2o x = bdir (x <.> "o")
-  sources <- getDirectoryFiles ""
-        [ "/src/libfirm/*.S"
-        , "/src/libfirm/*.c"
-        ]
-  return (map s2o sources)
+libfirmObjs = ccObjsFromSources "src/libfirm"
 
 demoRules :: Rules ()
 demoRules = do
-  let sourceToObject x = bdir (x <.> "o")
+  let dirToElf x = bdir "demos" </> x <.> "elf"
+      getDemos   = getDirectoryDirs "src/demos"
 
   bdir "src/libfirm/*.o" %> rvcc "rv32i"
   bdir "src/demos//*.o"  %> rvcc "rv32i"
 
   bdir "demos/*.elf" %> \out -> do
-    let dir   = "src" </> dropDirectory1 (dropExtension out)
-        globs = [ dir </> "*.S", dir </> "*.c" ]
+    let dir = "src" </> dropDirectory1 (dropExtension out)
+    ccObjsFromSources dir >>= rvld "rv32i" out
 
-    objs <- map sourceToObject <$> getDirectoryFiles "" globs
-    rvld "rv32i" out objs
-
-  "demos" ~> do
-    dirs <- getDirectoryDirs "src/demos"
-    need $ flip map dirs (\x -> bdir "demos" </> x <.> "elf")
+  -- phony top-level rule
+  "demos" ~> do need =<< (map dirToElf <$> getDemos)
 
 --------------------------------------------------------------------------------
 -- Tests
