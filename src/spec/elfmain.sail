@@ -24,34 +24,51 @@ function isCompressed(h : xhalf_t) -> bool = not_bool(h[1..0] == 0b11)
 /* Prefetch a RISC-V instruction -- importantly, predecode the given
 ** PC to determine if we have a compressed instruction or not.
 */
-val elf_prefetch : xlen_t -> FetchResult effect {rmem, rreg, wreg}
+val elf_prefetch : xlen_t -> FetchResult effect { rmem, rreg, wreg }
 function elf_prefetch (pc) = {
   InstrCount = InstrCount + 1;
 
-  let ilo = MEM(pc, 2);
+  let ilo : xhalf_t = MEM(pc, 2);
+
   if isCompressed(ilo) then FetchedCompressed(ilo)
   else {
-    let ihi = MEM(pc + 2, 2);
-    FetchedBase(append(ihi, ilo))
+    let ihi  : xhalf_t = MEM(pc + 2, 2);
+    let insn : xword_t = append(ihi, ilo);
+    FetchedBase(insn);
   }
 }
 
-val elf_fetch : unit -> unit effect {rmem, rreg, wreg}
+val elf_fetch : unit -> unit effect { rmem, rreg, wreg }
 function elf_fetch () = {
   match elf_prefetch(NextPC) {
     FetchError(ex, epc) => {
+      print_endline("fetch erro?");
       ()
     },
 
     FetchedCompressed(h) => {
       match decode_comp(h) {
-        _ => ()
+        None() => {
+          print_endline("illegal compressed instruction?");
+          ()
+        },
+        Some(_) => {
+          NextPC = NextPC + 2;
+          ()
+        }
       }
     },
 
     FetchedBase(w) => {
       match decode_base(w) {
-        _ => ()
+        None() => {
+          print_endline("illegal base instruction?");
+          ()
+        },
+        Some(i) => {
+          NextPC = NextPC + 4;
+          ()
+        }
       }
     }
   }
@@ -72,8 +89,9 @@ function elf_execute () = {
 /* initialize_regs(pc): initialize the register file, and set the initial
 ** program load point to the specified address.
 */
-val initialize_regs : xlen_t -> unit effect {wreg}
+val initialize_regs : xlen_t -> unit effect { wreg }
 function initialize_regs(pc) = {
+  PC = pc;
   NextPC = pc;
   InstrCount = 0;
 }
@@ -84,7 +102,7 @@ function initialize_regs(pc) = {
 ** returns true.
 */
 
-val churn : unit -> bool effect {rmem, rreg, wreg}
+val churn : unit -> bool effect { rmem, rreg, wreg }
 function churn () = {
   elf_fetch(); elf_execute();
 }
@@ -94,7 +112,7 @@ function churn () = {
 ** CPU, given the time when the CPU started up.
 */
 
-val print_stats : int -> unit effect {rreg}
+val print_stats : int -> unit effect { rreg }
 function print_stats(start_time) = {
   end_time = get_time_ns();
   elapsed  = end_time - start_time;
@@ -112,7 +130,7 @@ function print_stats(start_time) = {
 ** CPU occasionally, if 'verbose' is true, at a rate of every 'rate'
 ** instructions executed. start_time should be when the CPU started
 */
-val dump_info : (bool, int, int) -> unit effect {rreg}
+val dump_info : (bool, int, int) -> unit effect { rreg }
 function dump_info(verbose, dump_rate, start_time) = {
   if (mod(InstrCount, dump_rate) == 0) & verbose then {
     print_endline("");
@@ -127,9 +145,8 @@ function dump_info(verbose, dump_rate, start_time) = {
 */
 val main : unit -> unit effect { rmem, rreg, wreg }
 function main() = {
-  // TODO FIXME: verbosity doesn't work with OCaml?
-  //let verbosity  = get_verbosity();
-  //let verbose0   = verbosity[0] == bitone;
+  let verbosity  = get_verbosity();
+  let verbose0   = verbosity[0] == bitone;
 
   let elf_pc     = elf_entry();
   let start_time = get_time_ns();
@@ -137,8 +154,17 @@ function main() = {
   print_endline("[Sail] ELF Initial PC: " ^-^ hex_str(elf_pc));
   initialize_regs(to_bits(32, elf_pc));
 
+  print_endline(MUL(to_bits(5,8),to_bits(5,0),to_bits(5,9)));
+  print_endline(LB(to_bits(12,8),to_bits(5,15),to_bits(5,14)));
+  print_endline(SB(to_bits(7,8),to_bits(5,0),to_bits(5,9),to_bits(5,15)));
+  print_endline(LUI(to_bits(20,1337),to_bits(5,15)));
+  print_endline(FENCE(to_bits(4,5),to_bits(4,3)));
+  print_endline(FENCE_I());
+  print_endline(EBREAK());
+  print_endline(ECALL());
+
   print_endline("[Sail] Executing...");
-  while (churn ()) do { dump_info(false, 10000000, start_time) };
+  while (churn ()) do { dump_info(verbose0, 10000000, start_time) };
 
   print_endline("\n[Sail] Finished!");
   print_stats(start_time);

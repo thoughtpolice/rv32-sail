@@ -15,10 +15,48 @@ type regno ('n : Int), 0 <= 'n < 32 = atom('n)
 
 type regbits = bits(5) /* log2(32), would be nice to have clog in sail? */
 
-val cast regbits_to_regno : bits(5) -> {'n, 0 <= 'n < 32. regno('n)}
+val cast regbits_to_regno : regbits -> {'n, 0 <= 'n < 32. regno('n)}
 function regbits_to_regno b =
   let r as atom(_) = unsigned(b)
   in r
+
+val cast gp_regbits_to_string : regbits -> string
+function gp_regbits_to_string b =
+  let r = regbits_to_regno(b)
+  in match r {
+    0  => "zero",
+    1  => "ra",
+    2  => "sp",
+    3  => "gp",
+    4  => "tp",
+    5  => "t0",
+    6  => "t1",
+    7  => "t2",
+    8  => "fp",
+    9  => "s1",
+    10 => "a0",
+    11 => "a1",
+    12 => "a2",
+    13 => "a3",
+    14 => "a4",
+    15 => "a5",
+    16 => "a6",
+    17 => "a7",
+    18 => "s2",
+    19 => "s3",
+    20 => "s4",
+    21 => "s5",
+    22 => "s6",
+    23 => "s7",
+    24 => "s8",
+    25 => "s9",
+    26 => "s10",
+    27 => "s11",
+    28 => "t3",
+    29 => "t4",
+    30 => "t5",
+    31 => "t6"
+  }
 
 /* -------------------------------------------------------------------------- */
 /* -- Register file reads/writes -------------------------------------------- */
@@ -54,11 +92,8 @@ function __RISCV_write(addr, width, data) =
   let _ = write_ram(32, width, 0x0000_0000, addr, data)
   in ()
 
-val MEMr : forall 'n. (xlen_t, atom('n)) -> bits(8 * 'n) effect {rmem}
-function MEMr (addr, width) = __RISCV_read(addr, width)
-
 /* overload read/write ops to 'MEM' */
-overload MEM = { MEMr, MEMw }
+overload MEM = { __RISCV_read, __RISCV_write }
 
 /* -------------------------------------------------------------------------- */
 /* -- Exceptions ------------------------------------------------------------ */

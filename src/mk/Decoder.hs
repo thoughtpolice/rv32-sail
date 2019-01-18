@@ -1,17 +1,22 @@
 {-# OPTIONS_GHC -Wall -Wno-missing-signatures #-}
 
-{-# LANGUAGE BinaryLiterals #-}
-{-# LANGUAGE DataKinds      #-}
-{-# LANGUAGE DerivingVia    #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE TypeFamilies   #-}
+{-# LANGUAGE BinaryLiterals      #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE DerivingVia         #-}
+{-# LANGUAGE KindSignatures      #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE ViewPatterns        #-}
 
-module Decoder
-  ( genInstrs
-  ) where
+module Decoder where
 
 -- base
+import           Data.Char     ( toLower )
 import           Data.List     ( intercalate )
+import           Data.Proxy    ( Proxy(..) )
+import           GHC.TypeLits
 import           Text.Printf   ( printf )
 
 --------------------------------------------------------------------------------
@@ -166,6 +171,8 @@ doubleInstrs =
 
 -- constructor names can't have '.' in them
 fixupName = map (\x -> if (x == '.') then '_' else x)
+-- for print_insn
+lowerName = map toLower
 
 -- 32 or 16-bit encode/decode?
 data EncdecTy = Base | Comp
@@ -174,7 +181,7 @@ encdecTyFunc Comp = "encdec_comp"
 
 -- create the RHS of a 'mapping clause f = LHS <-> RHS'
 itypeToMapP ty =
-  let i2b w x = printf ("0b%0" <> show (w :: Int) <> "b") x :: String
+  let i2b w x = printf ("0b%0" <> show (w :: Int) <> "b") (toInteger x) :: String
       op      = i2b 7
       is      = intercalate " @ "
   in case ty of
@@ -197,31 +204,66 @@ itypeToMapP ty =
     Raw o       -> i2b 32 o
 
 -- create the LHS of a 'mapping clause f = LHS <-> RHS'
-itypeToCtor nam ty =
-  let nam' = fixupName nam
-  in case ty of
-    RTy _ _ _   -> nam' <> "(rs2, rs1, rd)"
-    ITy _ _     -> nam' <> "(imm, rs1, rd)"
-    STy _ _     -> nam' <> "(imm1, rs2, rs1, imm0)"
-    BTy _ _     -> nam' <> "(imm1, rs2, rs1, imm0)"
-    UTy _       -> nam' <> "(imm, rd)"
-    JTy _       -> nam' <> "(imm, rd)"
+itypeToCtor (fixupName -> nam) ty = nam <> itypeToCtorTy ty
 
-    A0Ty _ _ _ _ -> nam' <> "(aq, rl, rs1, rd)"
-    A1Ty _ _ _   -> nam' <> "(aq, rl, rs2, rs1, rd)"
+itypeToCtorTy ty = case ty of
+  RTy _ _ _   -> "(rs2, rs1, rd)"
+  ITy _ _     -> "(imm, rs1, rd)"
+  STy _ _     -> "(imm1, rs2, rs1, imm0)"
+  BTy _ _     -> "(imm1, rs2, rs1, imm0)"
+  UTy _       -> "(imm, rd)"
+  JTy _       -> "(imm, rd)"
 
-    R4Ty _ _    -> nam' <> "(rs3, rs2, rs1, frm, rd)"
+  A0Ty _ _ _ _ -> "(aq, rl, rs1, rd)"
+  A1Ty _ _ _   -> "(aq, rl, rs2, rs1, rd)"
 
-    Fence _ _ _ _ _ -> nam' <> "(p, s)"
-    Raw _       -> nam' <> "()"
+  R4Ty _ _    -> "(rs3, rs2, rs1, frm, rd)"
+
+  Fence _ _ _ _ _ -> "(p, s)"
+  Raw _       -> "()"
+
+--
+-- print_insn function
+--
+
+genPrintInsnHead (fixupName -> nam) ty =
+  "function clause print_insn " <> nam <> itypeToCtorTy ty
+
+genPrintInsnBody (lowerName -> nam) ty = start <> " ^-^ " <> body
+  where
+    quote x = "\"" <> x <> " \""
+    commafy  = intercalate " ^-^ \", \" ^-^ "
+    parenfiy x = "\"(\" ^-^ " <> x <> " ^-^ \")\""
+
+    (start, body) = case ty of
+      RTy _ _ _   -> (quote nam, commafy [ "rd", "rs1", "rs2" ])
+      ITy _ _     -> (quote nam, commafy [ "rd", "rs1", "bits_str(imm)" ])
+
+      STy _ _     -> (quote nam, commafy [ "rs2", "bits_str(append(imm1,imm0)) ^-^ " <> parenfiy "rs1" ])
+
+      UTy _       -> (quote nam, commafy [ "rd", "bits_str(imm)" ])
+
+      -- TODO FIXME
+      R4Ty _ _    -> (quote nam, commafy [ "rd", "rs1", "rs2", "rs3" ])
+
+      Fence _ _ _ _ _ -> (quote nam, commafy [ "bits_str(p)", "bits_str(s)" ])
+      Raw _       -> (quote nam, quote mempty)
+      _           -> (quote nam, "\"\"")
+
+{--
+      BTy _ _     -> "(imm1, rs2, rs1, imm0)"
+      JTy _       -> "(imm, rd)"
+
+      A0Ty _ _ _ _ -> (quote nam, quote "(aq, rl, rs1, rd)")
+      A1Ty _ _ _   -> "(aq, rl, rs2, rs1, rd)"
+--}
 
 --
 -- trivial generators: 'mapping clause FOO' and 'union clause ast = FOO'
 --
 
-genAstClause nam ty = mconcat [ "union clause ast = ", nam', " : ", sty ]
-  where nam' = fixupName nam
-        sty = case ty of
+genAstClause (fixupName -> nam) ty = mconcat [ "union clause ast = ", nam, " : ", sty ]
+  where sty = case ty of
           RTy _ _ _ -> "Rtype"
           ITy _ _   -> "Itype"
           STy _ _   -> "Stype"
@@ -245,8 +287,9 @@ genEncClause ety nam ty = mconcat
   , itypeToMapP ty
   ]
 
--- top level generator that makes things pretty
+--------------------------------------------------------------------------------
 
+-- top level generator that makes things pretty
 genInstrDecoder (BaseInstr nam ty) =
   let commentPro = "/* -- " <> nam <> " encoding "
       commentEp  = " */"
@@ -259,11 +302,27 @@ genInstrDecoder (BaseInstr nam ty) =
        , genEncClause Base nam ty, "\n"
        ]
 
+genPrintInsn (BaseInstr nam ty) =
+  genPrintInsnHead nam ty <> " = " <> genPrintInsnBody nam ty
+
+--------------------------------------------------------------------------------
+
+decoderFrontend = genInstrs <> "\n"
+       <> genPrint
+
 -- every supported instruction
 genInstrs
   = intercalate "\n"
   $ map genInstrDecoder
-  $ baseInstrs
+  $ allInstrs
+
+genPrint
+  = intercalate "\n"
+  $ map genPrintInsn
+  $ allInstrs
+
+allInstrs
+  = baseInstrs
  ++ multInstrs
  ++ atomicInstrs
  ++ floatInstrs

@@ -30,6 +30,8 @@ type R4type = (regbits, regbits, regbits, frm, regbits)
 type A0type = (bits(1), bits(1), regbits, regbits)
 type A1type = (bits(1), bits(1), regbits, regbits, regbits)
 
+/* -------------------------------------------------------------------------- */
+
 /* Scattered AST definitions */
 scattered union ast
 
@@ -41,10 +43,14 @@ scattered mapping encdec_base
 val encdec_comp : ast <-> bits(16)
 scattered mapping encdec_comp
 
-/* TODO FIXME: no compressed ones yet, so fake one */
+/* Function for printing things. TODO: Replace with <-> string mapping. */
+val print_insn : ast -> string
+scattered mapping print_insn
 
+/* TODO FIXME: no compressed ones yet, so fake one */
 union clause ast = C_NOP : unit
 mapping clause encdec_comp = C_NOP() <-> 0b000 @ 0b0 @ 0b00000 @ 0b00000 @ 0b01
+function clause print_insn C_NOP() = "c.nop"
 
 /* -------------------------------------------------------------------------- */
 /* -- El Fin (decode/prologue.sail) ----------------------------------------- */

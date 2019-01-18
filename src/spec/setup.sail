@@ -27,6 +27,7 @@ infixl 9 ^-^
 /* -- FFI C Bindings -------------------------------------------------------- */
 
 val get_verbosity = { c: "sail_get_verbosity" } : unit -> bits(64)
+function get_verbosity () = 0x0000000000000000
 
 val "get_cycle_count"     : unit -> int
 val "get_time_ns"         : unit -> int
