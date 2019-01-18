@@ -61,23 +61,6 @@ function MEMr (addr, width) = __RISCV_read(addr, width)
 overload MEM = { MEMr, MEMw }
 
 /* -------------------------------------------------------------------------- */
-/* -- AST, Assembly, Decode, and Execute signatures ------------------------- */
-
-scattered union ast
-
-val assembly : ast <-> string
-scattered mapping assembly
-
-val encdec_base : ast <-> bits(32)
-scattered mapping encdec_base
-
-val encdec_comp : ast <-> bits(16)
-scattered mapping encdec_comp
-
-val execute : ast -> unit
-scattered function execute
-
-/* -------------------------------------------------------------------------- */
 /* -- Exceptions ------------------------------------------------------------ */
 
 union exception = {

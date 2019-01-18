@@ -1,5 +1,5 @@
 /*
-** scattered.sail: end module that closes scattered definitions, etc.
+** decode/epilogue.sail: close scattered defs, helpers
 ** See Copyright Notice in LICENSE.txt
 */
 
@@ -8,14 +8,11 @@
 
 /* -- Close all the scattered definitions -- */
 
-end execute
 end encdec_comp
 end encdec_base
-end assembly
 end ast
 
-val cast print_insn : ast -> string
-function print_insn i = assembly(i)
+/* Utility functions that wrap the encode/decode mapping */
 
 val decode_base : bits(32) -> ast effect pure
 function decode_base bv = encdec_base(bv)
@@ -30,4 +27,4 @@ val encode_comp : ast -> bits(16) effect pure
 function encode_comp bv = encdec_comp(bv)
 
 /* -------------------------------------------------------------------------- */
-/* -- El Fin (scattered.sail) ----------------------------------------------- */
+/* -- El Fin (decode/epilogue.sail) ----------------------------------------- */

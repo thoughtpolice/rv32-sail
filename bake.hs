@@ -26,6 +26,7 @@ import           Development.Shake.FilePath
 -- local imports
 import           Options ( myShakeOptions, myFlags )
 import           Sail    ( SailBackend(..), sailSimRules, sailGenHexBits )
+import           Decoder ( genBaseInstrs )
 
 --------------------------------------------------------------------------------
 -- Basics
@@ -48,10 +49,12 @@ specSources
   -> m [FilePath]
   -- ^ Resulting list of Sail source files.
 specSources mainFile = pure $
-    -- prelimary setup. these modules are fairly reusable
-  [ src "setup", gen "hexbits" ] <>
-    -- riscv specific modules
-  map src [ "basics", "rv32", "scattered" ] <>
+    -- prelimary setup. these modules are fairly simple/etc
+  [ src "setup", gen "hexbits", src "basics" ] <>
+    -- riscv decoder/encoder/ast mapping
+  [ src "decode/prologue" ] <>
+  map gen [ "decode/base" ] <>
+  [ src "decode/epilogue" ] <>
     -- chosen loader entry point
   map src [ fromMaybe "elfmain" mainFile ]
   where
@@ -59,7 +62,7 @@ specSources mainFile = pure $
     -- source files which are hand-written (live under ./src)
     src x = "src/spec" </> x <.> "sail"
     -- source files which are generated (live under ./build)
-    gen x = bdir x <.> "sail"
+    gen x = bdir ("src/spec" </> x) <.> "sail"
 
 -- | Top-level set of all rules for building the emulator.
 emulatorRules :: Rules ()
@@ -70,7 +73,12 @@ emulatorRules = do
   sailSimRules SailBackendOCaml (bdir "cruise")     sources
 
   -- generate hexbits.sail
-  bdir "hexbits.sail" %> sailGenHexBits
+  bdir "src/spec/hexbits.sail" %> sailGenHexBits
+
+  -- generate decoder
+  bdir "src/spec/decode/base.sail" %> \out -> do
+    putNormal ("# writeFile' (for " <> out <> ")")
+    writeFile' out genBaseInstrs
 
 --------------------------------------------------------------------------------
 -- Tests

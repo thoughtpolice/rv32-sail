@@ -47,7 +47,11 @@ let
   # Haskell inputs, for the build system
 
   haskellInputs = pkgs.haskell.packages."${ghc}".ghcWithPackages (p: with p;
-    [ shake ]);
+    [ shake
+      ghc-typelits-extra
+      ghc-typelits-natnormalise
+      ghc-typelits-knownnat
+    ]);
 
   # Write out a stupid wrapper for 'runghc' which sets the include path to
   # include the ./mk directory. This is to make the build system nicer, because
