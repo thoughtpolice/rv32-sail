@@ -298,6 +298,7 @@ genInstrDecoder (BaseInstr nam ty) =
        , commentPro <> fill <> commentEp, "\n\n"
        , genAstClause nam ty, "\n"
        , genEncClause Base nam ty, "\n"
+       , genPrintInsnHead nam ty <> " = " <> genPrintInsnBody nam ty, "\n"
        ]
 
 genPrintInsn (BaseInstr nam ty) =
@@ -306,7 +307,6 @@ genPrintInsn (BaseInstr nam ty) =
 --------------------------------------------------------------------------------
 
 decoderFrontend = genInstrs <> "\n"
-       <> genPrint
 
 -- every supported instruction
 genInstrs
@@ -314,10 +314,12 @@ genInstrs
   $ map genInstrDecoder
   $ allInstrs
 
+{--
 genPrint
   = intercalate "\n"
   $ map genPrintInsn
   $ allInstrs
+--}
 
 allInstrs
   = baseInstrs
