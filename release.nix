@@ -102,7 +102,7 @@ let
         done
       '';
 
-    buildExe = pkgs.stdenv.mkDerivation {
+    bake = pkgs.stdenv.mkDerivation {
       name = "bake-${version}";
       inherit version;
 
