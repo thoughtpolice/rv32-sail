@@ -46,7 +46,7 @@ specSources
   -- ^ Resulting list of Sail source files.
 specSources mainFile = pure $
     -- prelimary setup. these modules are fairly simple/etc
-  [ src "setup", gen "hexbits", src "basics" ] <>
+  [ src "preamble", gen "hexbits", src "basics" ] <>
     -- riscv decoder/encoder/ast mapping
   [ src "decode/prologue" ] <>
   map gen [ "decode/base" ] <>

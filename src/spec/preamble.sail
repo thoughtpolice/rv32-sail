@@ -1,5 +1,5 @@
 /*
-** setup.sail: basic, reusable sail imports, types, and definitions.
+** preamble.sail: basic, reusable sail imports, types, and definitions.
 ** See Copyright Notice in LICENSE.txt
 */
 
@@ -93,6 +93,12 @@ val "decimal_string_of_bits" : forall 'n. bits('n) -> string
 val to_bits : forall 'l, 'l >= 0 .(atom('l), int) -> bits('l)
 function to_bits (l, n) = get_slice_int(l, n, 0)
 
+// why so long? :(
+val print_ln : string -> unit
+val prerr_ln : string -> unit
+function print_ln s = print_endline(s)
+function prerr_ln s = prerr_endline(s)
+
 /* -------------------------------------------------------------------------- */
 /* -- RAM Primitives -------------------------------------------------------- */
 
@@ -102,4 +108,5 @@ val "write_ram" : forall 'n 'm.
 val "read_ram" : forall 'n 'm.
   (atom('m), atom('n), bits('m), bits('m)) -> bits(8 * 'n) effect {rmem}
 
-/* -- El Fin (setup.sail) --------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+/* -- El Fin (preamble.sail) ------------------------------------------------ */

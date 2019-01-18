@@ -154,7 +154,7 @@ function main() = {
 
   initialize_regs(to_bits(32, elf_pc));
   print_endline("[Sail] ELF Initial PC: " ^-^ hex_str(elf_pc));
-  print_endline("[Sail] Executing...");
+  print_endline("[Sail] Executing reset vector...");
 
   while (churn ()) do { dump_info(verbose0, 10000000, start_time) };
 
