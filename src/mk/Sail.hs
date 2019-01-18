@@ -96,7 +96,7 @@ sailSimRules SailBackendC bin srcs = do
 
     -- generated C code must have the right include path
     sdir <- sailDir
-    let cflags = [ "-O2", "-I", sdir </> "lib" ]
+    let cflags = [ "-O2", "-DHAVE_SETCONFIG", "-I", sdir </> "lib" ]
 
     -- require & build
     need allsrc >> gcc out cflags allsrc [ "z", "gmp" ]
