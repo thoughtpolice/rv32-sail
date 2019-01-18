@@ -11,17 +11,24 @@ mapping bool_not_bits : bool <-> bits(1) = {
 
 /* "RISC-V User-Level ISA V2.2, pg 104" */
 
+type frm   = bits(3) // F rounding mode
 type imm5  = bits(5)
 type imm7  = bits(7)
 type imm12 = bits(12)
 type imm20 = bits(20)
 
-type Rtype = (regbits, regbits, regbits)
-type Itype = (imm12, regbits, regbits)
-type Stype = (imm7, regbits, regbits, imm5)
-type Btype = (imm7, regbits, regbits, imm5)
-type Utype = (imm20, regbits)
-type Jtype = (imm20, regbits)
+type Rtype  = (regbits, regbits, regbits)
+type Itype  = (imm12, regbits, regbits)
+type Stype  = (imm7, regbits, regbits, imm5)
+type Btype  = (imm7, regbits, regbits, imm5)
+type Utype  = (imm20, regbits)
+type Jtype  = (imm20, regbits)
+type Mtype  = (bits(4), bits(4)) // fences
+
+type R4type = (regbits, regbits, regbits, frm, regbits)
+
+type A0type = (bits(1), bits(1), regbits, regbits)
+type A1type = (bits(1), bits(1), regbits, regbits, regbits)
 
 /* Scattered AST definitions */
 scattered union ast

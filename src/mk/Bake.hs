@@ -21,7 +21,7 @@ import           Development.Shake.FilePath
 -- local imports
 import           Options ( myShakeOptions, myFlags )
 import           Sail    ( SailBackend(..), sailSimRules, sailGenHexBits )
-import           Decoder ( genBaseInstrs )
+import           Decoder ( genInstrs )
 
 --------------------------------------------------------------------------------
 -- Basics
@@ -72,8 +72,9 @@ emulatorRules = do
 
   -- generate decoder
   bdir "src/spec/decode/base.sail" %> \out -> do
+    need [ "src/mk/Decoder.hs" ]
     putNormal ("# writeFile' (for " <> out <> ")")
-    writeFile' out genBaseInstrs
+    writeFile' out genInstrs
 
 --------------------------------------------------------------------------------
 -- Tests

@@ -1,25 +1,21 @@
+{-# OPTIONS_GHC -Wall -Wno-missing-signatures #-}
+
 {-# LANGUAGE BinaryLiterals #-}
 {-# LANGUAGE DataKinds      #-}
 {-# LANGUAGE DerivingVia    #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TypeFamilies   #-}
 
-module Decoder where
+module Decoder
+  ( genInstrs
+  ) where
 
 -- base
 import           Data.List     ( intercalate )
-import           Data.Maybe    ( fromMaybe )
-import           GHC.TypeLits
 import           Text.Printf   ( printf )
-
--- shake
-import           Development.Shake
-import           Development.Shake.FilePath
-import           Development.Shake.Classes
 
 --------------------------------------------------------------------------------
 -- RISC-V DSL for the Sail Instruction Decoder
-
 
 --
 -- Base Instruction Formats
@@ -27,20 +23,35 @@ import           Development.Shake.Classes
 
 type Op = Int
 type F7 = Int
+type F5 = Int
+type F4 = Int
 type F3 = Int
+type F2 = Int
 
 data BaseInstrType
-  = RTy F7 F3 Op
+  -- RV32I types
+  = RTy  F7 F3 Op
   | ITy F3 Op
   | STy F3 Op
   | BTy F3 Op
   | UTy Op
   | JTy Op
+
+  -- F/D types
+  | R4Ty F2 Op
+
+  -- A types
+  | A0Ty F5 F5 F3 Op
+  | A1Ty F5 F3 Op
+
+  -- Raw types (ECALL, etc)
+  | Fence F4 F5 F3 F5 Op
   | Raw Integer
 
 type Name = String
 data Instr = BaseInstr Name BaseInstrType
 
+-- I
 baseInstrs =
   [ BaseInstr "LUI"   (UTy 0b0110111)
   , BaseInstr "AUIPC" (UTy 0b0010111)
@@ -87,8 +98,8 @@ baseInstrs =
   , BaseInstr "OR"    (RTy 0b0000000 0b110 0b0110011)
   , BaseInstr "AND"   (RTy 0b0000000 0b111 0b0110011)
 
-  --, BaseInstr "FENCE"   () TODO FIXME
-  , BaseInstr "FENCE_I" (Raw 0b00000000000000000001000000001111)
+  , BaseInstr "FENCE"   (Fence 0b0000 0b00000 0b000 0b00000 0b0001111)
+  , BaseInstr "FENCE.I" (Raw 0b00000000000000000001000000001111)
 
   , BaseInstr "ECALL"   (Raw 0b00000000000000000000000000000000)
   , BaseInstr "EBREAK"  (Raw 0b00000000000100000000000000000000)
@@ -101,13 +112,69 @@ baseInstrs =
   , BaseInstr "CSRRCI"  (ITy 0b111 0b1110011)
   ]
 
-data EncdecTy = Base | Comp
+-- M
+multInstrs =
+  [ BaseInstr "MUL"    (RTy 0b0000001 0b000 0b0110011)
+  , BaseInstr "MULH"   (RTy 0b0000001 0b001 0b0110011)
+  , BaseInstr "MULHSU" (RTy 0b0000001 0b010 0b0110011)
+  , BaseInstr "MULHU"  (RTy 0b0000001 0b011 0b0110011)
+  , BaseInstr "DIV"    (RTy 0b0000001 0b100 0b0110011)
+  , BaseInstr "DIVU"   (RTy 0b0000001 0b101 0b0110011)
+  , BaseInstr "REM"    (RTy 0b0000001 0b110 0b0110011)
+  , BaseInstr "REMU"   (RTy 0b0000001 0b111 0b0110011)
+  ]
 
+-- A
+atomicInstrs =
+  [ BaseInstr "LR.W"      (A0Ty 0b00010 0b00000 0b010 0b0101111)
+  , BaseInstr "SC.W"      (A1Ty 0b00011         0b010 0b0101111)
+
+  , BaseInstr "AMOSWAP.W" (A1Ty 0b00011         0b010 0b0101111)
+  , BaseInstr "AMOADD.W"  (A1Ty 0b00001         0b010 0b0101111)
+  , BaseInstr "AMOXOR.W"  (A1Ty 0b00000         0b010 0b0101111)
+  , BaseInstr "AMOAND.W"  (A1Ty 0b00100         0b010 0b0101111)
+  , BaseInstr "AMOOR.W"   (A1Ty 0b01100         0b010 0b0101111)
+  , BaseInstr "AMOMIN.W"  (A1Ty 0b01000         0b010 0b0101111)
+  , BaseInstr "AMOMAX.W"  (A1Ty 0b10000         0b010 0b0101111)
+  , BaseInstr "AMOMINU.W" (A1Ty 0b11000         0b010 0b0101111)
+  , BaseInstr "AMOMAXU.W" (A1Ty 0b11100         0b010 0b0101111)
+  ]
+
+-- F
+floatInstrs =
+  [ BaseInstr "FLW"      (ITy  0b010 0b0000111)
+  , BaseInstr "FSW"      (STy  0b010 0b0100111)
+
+  , BaseInstr "FMADD.S"  (R4Ty 0b00  0b1000011)
+  , BaseInstr "FMSUB.S"  (R4Ty 0b00  0b1000111)
+  , BaseInstr "FNMSUB.S" (R4Ty 0b00  0b1001011)
+  , BaseInstr "FNMADD.S" (R4Ty 0b00  0b1001111)
+  ]
+
+doubleInstrs =
+  [ BaseInstr "FLD"      (ITy 0b011 0b0000111)
+  , BaseInstr "FSD"      (STy 0b011 0b0100111)
+
+  , BaseInstr "FMADD.D"  (R4Ty 0b01  0b1000011)
+  , BaseInstr "FMSUB.D"  (R4Ty 0b01  0b1000111)
+  , BaseInstr "FNMSUB.D" (R4Ty 0b01  0b1001011)
+  , BaseInstr "FNMADD.D" (R4Ty 0b01  0b1001111)
+  ]
+
+--------------------------------------------------------------------------------
+-- Code generator
+
+-- constructor names can't have '.' in them
+fixupName = map (\x -> if (x == '.') then '_' else x)
+
+-- 32 or 16-bit encode/decode?
+data EncdecTy = Base | Comp
 encdecTyFunc Base = "encdec_base"
 encdecTyFunc Comp = "encdec_comp"
 
+-- create the RHS of a 'mapping clause f = LHS <-> RHS'
 itypeToMapP ty =
-  let i2b w x = printf ("0b%0" <> show w <> "b") x :: String
+  let i2b w x = printf ("0b%0" <> show (w :: Int) <> "b") x :: String
       op      = i2b 7
       is      = intercalate " @ "
   in case ty of
@@ -117,25 +184,57 @@ itypeToMapP ty =
     BTy f3 o    -> is [ "imm1", "rs2", "rs1", i2b 3 f3, "imm0", op o ]
     UTy o       -> is [ "imm", "rd", op o ]
     JTy o       -> is [ "imm", "rd", op o ]
+
+    A0Ty f5 f5' f3 o ->
+      is [ i2b 5 f5, "aq", "rl", i2b 5 f5', "rs1", i2b 3 f3, "rd", op o ]
+    A1Ty f5 f3 o ->
+      is [ i2b 5 f5, "aq", "rl", "rs2", "rs1", i2b 3 f3, "rd", op o ]
+
+    R4Ty f2 o   -> is [ "rs3", i2b 2 f2, "rs2", "rs1", "frm", "rd", op o ]
+
+    Fence a b c d o ->
+      is [ i2b 4 a, "p", "s", i2b 5 b, i2b 3 c, i2b 5 d, op o ]
     Raw o       -> i2b 32 o
 
-itypeToCtor nam ty = case ty of
-  RTy f7 f3 o -> nam <> "(rs2, rs1, rd)"
-  ITy f3 o    -> nam <> "(imm, rs1, rd)"
-  STy f3 o    -> nam <> "(imm1, rs2, rs1, imm0)"
-  BTy f3 o    -> nam <> "(imm1, rs2, rs1, imm0)"
-  UTy o       -> nam <> "(imm, rd)"
-  JTy o       -> nam <> "(imm, rd)"
-  Raw o       -> nam <> "()"
+-- create the LHS of a 'mapping clause f = LHS <-> RHS'
+itypeToCtor nam ty =
+  let nam' = fixupName nam
+  in case ty of
+    RTy _ _ _   -> nam' <> "(rs2, rs1, rd)"
+    ITy _ _     -> nam' <> "(imm, rs1, rd)"
+    STy _ _     -> nam' <> "(imm1, rs2, rs1, imm0)"
+    BTy _ _     -> nam' <> "(imm1, rs2, rs1, imm0)"
+    UTy _       -> nam' <> "(imm, rd)"
+    JTy _       -> nam' <> "(imm, rd)"
 
-genAstClause nam ty = mconcat [ "union clause ast = ", nam, " : ", sty ]
-  where sty = case ty of
+    A0Ty _ _ _ _ -> nam' <> "(aq, rl, rs1, rd)"
+    A1Ty _ _ _   -> nam' <> "(aq, rl, rs2, rs1, rd)"
+
+    R4Ty _ _    -> nam' <> "(rs3, rs2, rs1, frm, rd)"
+
+    Fence _ _ _ _ _ -> nam' <> "(p, s)"
+    Raw _       -> nam' <> "()"
+
+--
+-- trivial generators: 'mapping clause FOO' and 'union clause ast = FOO'
+--
+
+genAstClause nam ty = mconcat [ "union clause ast = ", nam', " : ", sty ]
+  where nam' = fixupName nam
+        sty = case ty of
           RTy _ _ _ -> "Rtype"
           ITy _ _   -> "Itype"
           STy _ _   -> "Stype"
           BTy _ _   -> "Btype"
           UTy _     -> "Utype"
           JTy _     -> "Jtype"
+
+          A0Ty _ _ _ _ -> "A0type"
+          A1Ty _ _ _ -> "A1type"
+
+          R4Ty _ _  -> "R4type"
+
+          Fence _ _ _ _ _ -> "Mtype"
           Raw _     -> "unit"
 
 genEncClause ety nam ty = mconcat
@@ -145,6 +244,8 @@ genEncClause ety nam ty = mconcat
   , " <-> "
   , itypeToMapP ty
   ]
+
+-- top level generator that makes things pretty
 
 genInstrDecoder (BaseInstr nam ty) =
   let commentPro = "/* -- " <> nam <> " encoding "
@@ -158,4 +259,12 @@ genInstrDecoder (BaseInstr nam ty) =
        , genEncClause Base nam ty, "\n"
        ]
 
-genBaseInstrs = intercalate "\n" (map genInstrDecoder baseInstrs)
+-- every supported instruction
+genInstrs
+  = intercalate "\n"
+  $ map genInstrDecoder
+  $ baseInstrs
+ ++ multInstrs
+ ++ atomicInstrs
+ ++ floatInstrs
+ ++ doubleInstrs
