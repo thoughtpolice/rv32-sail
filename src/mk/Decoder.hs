@@ -15,8 +15,6 @@ module Decoder where
 -- base
 import           Data.Char     ( toLower )
 import           Data.List     ( intercalate )
-import           Data.Proxy    ( Proxy(..) )
-import           GHC.TypeLits
 import           Text.Printf   ( printf )
 
 --------------------------------------------------------------------------------

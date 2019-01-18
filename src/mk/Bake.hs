@@ -77,6 +77,64 @@ emulatorRules = do
     writeFile' out decoderFrontend
 
 --------------------------------------------------------------------------------
+
+rvcc1 :: [ String ] -> String -> FilePath -> [ FilePath ] -> [ String ] -> Action ()
+rvcc1 mode arch out src extra = do
+  need src
+  cmd ("riscv32-unknown-elf-gcc -march=" <> arch)
+    [ "-Os", "-pedantic", "-std=c11" ]
+    [ "-Werror", "-Wall", "-Wextra", "-Wshadow", "-Wundef"
+    , "-Wpointer-arith", "-Wcast-qual", "-Wcast-align", "-Wwrite-strings"
+    , "-Wredundant-decls", "-Wstrict-prototypes", "-Wmissing-prototypes"
+    ]
+    [ "-ffreestanding", "-nostdlib" ]
+    mode [ "-o", out ] src extra
+
+rvcc :: String -> FilePath -> Action ()
+rvcc arch out =
+  let objectToSource = dropDirectory1 . dropExtension
+  in rvcc1 [ "-c" ] arch out [ objectToSource out ] []
+
+rvld :: String -> FilePath -> [FilePath] -> Action ()
+rvld arch out src = do
+  libfirm <- libfirmObjs
+  need [ lds ]
+  rvcc1 mempty arch out (src ++ libfirm) [ flags ]
+  where lds = "src/libfirm/sections.lds"
+        ldm = out -<.> "map"
+        flags = "-Wl,-Bstatic,-T," <> lds <> ",-Map," <> ldm <> ",--strip-debug"
+
+--------------------------------------------------------------------------------
+-- Demos
+
+libfirmObjs :: Action [FilePath]
+libfirmObjs = do
+  let s2o x = bdir (x <.> "o")
+  sources <- getDirectoryFiles ""
+        [ "/src/libfirm/*.S"
+        , "/src/libfirm/*.c"
+        ]
+  return (map s2o sources)
+
+demoRules :: Rules ()
+demoRules = do
+  let sourceToObject x = bdir (x <.> "o")
+
+  bdir "src/libfirm/*.o" %> rvcc "rv32i"
+  bdir "src/demos//*.o"  %> rvcc "rv32i"
+
+  bdir "demos/*.elf" %> \out -> do
+    let dir   = "src" </> dropDirectory1 (dropExtension out)
+        globs = [ dir </> "*.S", dir </> "*.c" ]
+
+    objs <- map sourceToObject <$> getDirectoryFiles "" globs
+    rvld "rv32i" out objs
+
+  "demos" ~> do
+    dirs <- getDirectoryDirs "src/demos"
+    need $ flip map dirs (\x -> bdir "demos" </> x <.> "elf")
+
+--------------------------------------------------------------------------------
 -- Tests
 
 getInstrTestFiles :: Action [FilePath]
@@ -90,8 +148,8 @@ getFirmwareTestFiles = getDirectoryFiles "src"
   , "/t/firmware/*.S"
   ]
 
-testRules :: Rules ()
-testRules = do
+_testRules :: Rules ()
+_testRules = do
   -- takeBaseName doesn't drop *all* extensions, e.g. foo.asm.o only
   -- becomes foo.asm
   let takeBaseName1 = dropExtensions . takeBaseName
@@ -108,7 +166,7 @@ testRules = do
           src
 
   -- links rv32 objects together
-  let rvld out objs = do
+  let ld out objs = do
         let ldsect = "src/t/firmware/sections.lds"
             ldmap  = bdir (takeBaseName out <.> "map")
             flags  = [ "-Wl,-Bstatic,-T,", ldsect, ",-Map,", ldmap, ",--strip-debug" ]
@@ -122,7 +180,7 @@ testRules = do
           [ "-lgcc" ]
 
   -- compiles C firmware test files
-  let rvcc out name = do
+  let cc out name = do
         let src = "src/t/firmware" </> name <.> "c"
 
         need [ src ]
@@ -150,13 +208,13 @@ testRules = do
         fw_objs  = [ bdir v -<.> "asm.o" | v <- fw_srcs, takeExtensions v == ".S" ]
                 <> [ bdir v -<.> "c.o" | v <- fw_srcs, takeExtensions v == ".c" ]
 
-    unit $ rvld out (fw_objs <> asm_objs)
+    unit $ ld out (fw_objs <> asm_objs)
     cmd "chmod -x" out
 
   -- Test rules
   bdir "t/tests/*.asm.o" %> \out -> tasm out (takeBaseName1 out)
   bdir "t/firmware/*.asm.o" %> \out -> rvasm out (takeBaseName1 out)
-  bdir "t/firmware/*.c.o"   %> \out -> rvcc  out (takeBaseName1 out)
+  bdir "t/firmware/*.c.o"   %> \out -> cc  out (takeBaseName1 out)
 
 --------------------------------------------------------------------------------
 -- Driver
@@ -164,13 +222,14 @@ testRules = do
 -- | Main entry point
 main :: IO ()
 main = shakeArgsWith myShakeOptions myFlags $ \_ targets -> pure $ Just $ do
+  -- establish the top-level 'all' rule as the default
   want (if not (null targets) then targets else [ "all" ])
 
-  -- phony rules which are shorthands
-  let top = map bdir [ "cruise", "cruise.opt", "selftest.elf" ]
-  "all" ~> need top
-  "clean" ~> removeFilesAfter (bdir mempty) ["//*"]
-
-  -- all main, top-level rule sets
+  -- major rule sets
   emulatorRules
-  testRules
+  demoRules
+--_testRules
+
+  -- phonies
+  "clean" ~> removeFilesAfter (bdir mempty) ["//*"]
+  "all" ~> need [ bdir "cruise", bdir "cruise.opt", "demos" ]
