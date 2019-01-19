@@ -103,10 +103,10 @@ function prerr_ln s = prerr_endline(s)
 /* -- RAM Primitives -------------------------------------------------------- */
 
 val "write_ram" : forall 'n 'm.
-  (atom('m), atom('n), bits('m), bits('m), bits(8 * 'n)) -> unit effect {wmem}
+  (atom('m), atom('n), bits('m), bits('m), bits(8 * 'n)) -> unit effect { wmem }
 
 val "read_ram" : forall 'n 'm.
-  (atom('m), atom('n), bits('m), bits('m)) -> bits(8 * 'n) effect {rmem}
+  (atom('m), atom('n), bits('m), bits('m)) -> bits(8 * 'n) effect { rmem }
 
 /* -------------------------------------------------------------------------- */
 /* -- El Fin (preamble.sail) ------------------------------------------------ */

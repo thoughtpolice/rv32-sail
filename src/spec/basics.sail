@@ -112,39 +112,4 @@ function raise_exc exc = {
 }
 
 /* -------------------------------------------------------------------------- */
-/* -- {List,Set}Config ------------------------------------------------------ */
-
-val __PrintConfig : (string, string, string, option(string)) -> unit
-val __ListConfig  : unit -> unit
-val __SetConfig   : (string, int) -> unit effect pure
-
-function __PrintConfig (cfg, ty, value, desc) = {
-  prerr_ln(cfg ^-^ " (" ^-^ ty ^-^ ") default = " ^-^ value);
-  match (desc) {
-    Some(d) => { prerr_ln("    " ^-^ d) },
-    _ => { () }
-  }
-}
-
-function __ListConfig () = {
-  prerr_ln("");
-  __PrintConfig("cpu.f", "boolean", "FALSE", Some("Enable -F Floating Point Extension"));
-  ()
-}
-
-function __SetConfig (arg, value) = {
-  match () {
-    () if arg == "cpu.f" => {
-      prerr_ln("[Sail] Enabling RV32 -F extension");
-    },
-
-    _ => {
-      let v = dec_str(value);
-      let q = "'" ^-^ arg ^-^ "' = '" ^-^ v ^-^ "'";
-      prerr_ln("[Sail] ERROR: Unrecognized config: " ^-^ q ^-^ "; ignoring...");
-    }
-  }
-}
-
-/* -------------------------------------------------------------------------- */
 /* -- El Fin (basics.sail) -------------------------------------------------- */

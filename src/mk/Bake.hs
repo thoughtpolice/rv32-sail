@@ -44,16 +44,15 @@ specSources
   -- selected.
   -> m [FilePath]
   -- ^ Resulting list of Sail source files.
-specSources mainFile = pure $
-    -- prelimary setup. these modules are fairly simple/etc
-  [ src "preamble", gen "hexbits", src "basics" ] <>
-    -- riscv decoder/encoder/ast mapping
-  [ src "decode/prologue" ] <>
-  map gen [ "decode/base" ] <>
-  [ src "decode/epilogue" ] <>
-    -- chosen loader entry point
-  map src [ fromMaybe "elfmain" mainFile ]
+specSources mainFile
+  = pure $ preamble <> setup <> decoder <> elfMain
   where
+    preamble = [ src "preamble", gen "hexbits" ]
+    setup    = map src [ "basics", "config" ]
+    decoder  = [ src "decode/prologue" ]
+            <> map gen [ "decode/base" ]
+            <> [ src "decode/epilogue" ]
+    elfMain  = [ src (fromMaybe "elfmain" mainFile) ]
 
     -- source files which are hand-written (live under ./src)
     src x = "src/spec" </> x <.> "sail"
