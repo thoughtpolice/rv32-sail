@@ -131,7 +131,7 @@ let
       inherit version;
 
       src = lib.cleanSource ./.;
-      buildInputs = buildInputs ++ [ buildExe ];
+      buildInputs = buildInputs ++ [ bake ];
 
       buildPhase =
         let targets = lib.concatStringsSep " " [ "build/cruise" "build/cruise.opt" ];
@@ -152,7 +152,7 @@ let
       inherit version;
 
       src = lib.cleanSource ./.;
-      buildInputs = buildInputs ++ [ buildExe ];
+      buildInputs = buildInputs ++ [ bake ];
 
       buildPhase =
         let targets = lib.concatStringsSep " " [ "build/cruise.opt.c" ];
