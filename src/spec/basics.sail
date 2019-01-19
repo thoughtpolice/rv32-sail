@@ -68,12 +68,18 @@ register NextPC : xlen_t
 register Xs : vector(32, dec, xlen_t)
 
 /* read gp reg */
-val rX : forall 'n, 0 <= 'n < 32. regno('n) -> xlen_t effect {rreg}
+val rX : forall 'n, 0 <= 'n < 32. regno('n) -> xlen_t effect { rreg }
+function rX r = match r {
+  0 => 0x00000000,
+  v => Xs[v]
+}
+/* -- this apparently triggers a compiler bug?
 function rX 0            = 0x00000000
 and      rX (r if r > 0) = Xs[r]
+*/
 
 /* write gp reg(r, val) */
-val wX : forall 'n, 0 <= 'n < 32. (regno('n), xlen_t) -> unit effect {wreg}
+val wX : forall 'n, 0 <= 'n < 32. (regno('n), xlen_t) -> unit effect { wreg }
 function wX (r, v) =
   if (r != 0) then { Xs[r] = v; }
 

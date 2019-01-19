@@ -85,13 +85,23 @@ function spc_matches_prefix s = {
   }
 }
 
-val "decimal_string_of_bits" : forall 'n. bits('n) -> string
-
 /* -------------------------------------------------------------------------- */
 /* -- Utility functions ----------------------------------------------------- */
 
 val to_bits : forall 'l, 'l >= 0 .(atom('l), int) -> bits('l)
 function to_bits (l, n) = get_slice_int(l, n, 0)
+
+val sub_vec = {c: "sub_bits", _: "sub_vec"} : forall 'n. (bits('n), bits('n)) -> bits('n)
+val xor_vec = {c: "xor_bits", _: "xor_vec"} : forall 'n. (bits('n), bits('n)) -> bits('n)
+
+val "sign_extend" : forall 'n 'm, 'm >= 'n. (bits('n), atom('m)) -> bits('m)
+val "zero_extend" : forall 'n 'm, 'm >= 'n. (bits('n), atom('m)) -> bits('m)
+
+val EXTS : forall 'n 'm , 'm >= 'n . bits('n) -> bits('m)
+function EXTS v = sign_extend(v, sizeof('m))
+
+val EXTZ : forall 'n 'm , 'm >= 'n . bits('n) -> bits('m)
+function EXTZ v = zero_extend(v, sizeof('m))
 
 // why so long? :(
 val print_ln : string -> unit

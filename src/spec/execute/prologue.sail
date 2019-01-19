@@ -5,7 +5,7 @@
 
 /* -------------------------------------------------------------------------- */
 
-val execute : ast -> unit effect pure
+val execute : ast -> unit effect { rreg, wreg }
 scattered function execute
 
 /* TODO FIXME: no compressed ones yet, so fake one */
