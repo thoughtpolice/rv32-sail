@@ -1,5 +1,5 @@
 #! /usr/bin/env nix-shell
-#! nix-shell --pure shell.nix -i runghc2
+#! nix-shell --pure shell.nix -i runghc-bake
 
 --------------------------------------------------------------------------------
 

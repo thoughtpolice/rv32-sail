@@ -57,8 +57,11 @@ let
   # include the ./mk directory. This is to make the build system nicer, because
   # nix-shell does not support passing these arguments directly. This is used
   # only by bake.hs
-  runghcWrapper = pkgs.writeShellScriptBin "runghc2" ''
+  runGhcWrapper = pkgs.writeShellScriptBin "runghc-bake" ''
     exec runghc -isrc/mk $@
+  '';
+  runBakeWrapper = pkgs.writeShellScriptBin "bake" ''
+    exec runghc -isrc/mk bake.hs $@
   '';
 
   # -----------------------------
@@ -80,7 +83,7 @@ let
   buildInputs =
     (with tools; [ lem linksem sail riscv-toolchain ]) ++
     (with pkgs; [ gcc ott z3 zlib wget dtc python3 ]) ++
-    [ runghcWrapper haskellInputs ] ++
+    [ haskellInputs ] ++
     (tools.ocamlDeps)
     ;
 
@@ -89,11 +92,12 @@ let
 
   jobs = rec {
     shell =
+      let deps = [ runBakeWrapper runGhcWrapper ] ++ buildInputs;
       # Export a usable shell environment. This also includes a little hack that
       # allows you to run 'nix-build shell.nix' in order to get a store path that
       # has the list of buildInputs as strict dependencies, so you can copy the
       # resulting closure around to other machines or places.
-      pkgs.runCommand "sail-shell" { inherit buildInputs; } ''
+      in pkgs.runCommand "sail-shell" { buildInputs = deps; } ''
         mkdir -p $out/nix-support/
         touch $out/nix-support/propagated-build-inputs
 
