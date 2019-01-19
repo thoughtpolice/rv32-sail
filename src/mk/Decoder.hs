@@ -227,17 +227,17 @@ itypeToCtorTy ty = case ty of
 genPrintInsnHead (fixupName -> nam) ty =
   "function clause print_insn " <> nam <> itypeToCtorTy ty
 
-genPrintInsnBody (lowerName -> nam) ty = start <> " ^-^ " <> body
+genPrintInsnBody (lowerName -> nam) ty = start <> " ^ " <> body
   where
     quote x = "\"" <> x <> " \""
-    commafy  = intercalate " ^-^ \", \" ^-^ "
-    parenfiy x = "\"(\" ^-^ " <> x <> " ^-^ \")\""
+    commafy  = intercalate " ^ \", \" ^ "
+    parenfiy x = "\"(\" ^ " <> x <> " ^ \")\""
 
     (start, body) = case ty of
       RTy _ _ _   -> (quote nam, commafy [ "rd", "rs1", "rs2" ])
       ITy _ _     -> (quote nam, commafy [ "rd", "rs1", "bits_str(imm)" ])
 
-      STy _ _     -> (quote nam, commafy [ "rs2", "bits_str(append(imm1,imm0)) ^-^ " <> parenfiy "rs1" ])
+      STy _ _     -> (quote nam, commafy [ "rs2", "bits_str(append(imm1,imm0)) ^ " <> parenfiy "rs1" ])
 
       UTy _       -> (quote nam, commafy [ "rd", "bits_str(imm)" ])
 

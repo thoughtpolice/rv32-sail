@@ -47,14 +47,14 @@ val elf_fetch : unit -> unit effect { rmem, rreg, wreg }
 function elf_fetch () = {
   match elf_prefetch(PC) {
     FetchError(ex, epc) => {
-      print_endline("fetch erro?");
+      print_ln("fetch error?");
       ()
     },
 
     FetchedCompressed(h) => {
       match decode_comp(h) {
         C_ILLEGAL(_) => {
-          print_endline("illegal compressed instruction?");
+          print_ln("illegal compressed instruction?");
           ()
         },
         _ => {
@@ -67,11 +67,11 @@ function elf_fetch () = {
     FetchedBase(w) => {
       match decode_base(w) {
         ILLEGAL(_) => {
-          print_endline("illegal base instruction?");
+          print_ln("illegal base instruction?");
           ()
         },
         i => {
-          print_endline(i);
+          print_ln(i);
           NextPC = NextPC + 4;
           ()
         }
@@ -145,7 +145,7 @@ function print_stats(start_time) = {
 val dump_info : (bool, int, int) -> unit effect { rreg }
 function dump_info(verbose, dump_rate, start_time) = {
   if (mod(InstrCount, dump_rate) == 0) & verbose then {
-    print_endline("");
+    print_ln("");
     print_stats(start_time);
   };
 }
@@ -164,12 +164,12 @@ function main() = {
   let start_time = get_time_ns();
 
   initialize_regs(to_bits(32, elf_pc));
-  print_endline("[Sail] ELF Initial PC: " ^-^ hex_str(elf_pc));
-  print_endline("[Sail] Executing reset vector...");
+  print_ln("[Sail] ELF Initial PC: " ^ hex_str(elf_pc));
+  print_ln("[Sail] Executing reset vector...");
 
   while (churn ()) do { dump_info(verbose0, 10000000, start_time) };
 
-  print_endline("\n[Sail] Finished!");
+  print_ln("\n[Sail] Finished!");
   print_stats(start_time);
 }
 

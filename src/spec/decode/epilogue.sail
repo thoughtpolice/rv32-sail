@@ -11,8 +11,8 @@ union clause ast =   ILLEGAL : bits(32)
 union clause ast = C_ILLEGAL : bits(16)
 mapping clause encdec_base =   ILLEGAL(s) <-> s
 mapping clause encdec_comp = C_ILLEGAL(s) <-> s
-function clause print_insn   ILLEGAL(s) =   "illegal " ^-^ bits_str(s)
-function clause print_insn C_ILLEGAL(s) = "c.illegal " ^-^ bits_str(s)
+function clause print_insn   ILLEGAL(s) =   "illegal " ^ bits_str(s)
+function clause print_insn C_ILLEGAL(s) = "c.illegal " ^ bits_str(s)
 
 /* -- Close all the scattered definitions -- */
 

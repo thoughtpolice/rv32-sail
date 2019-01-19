@@ -35,9 +35,9 @@ val __ListConfig  : unit -> unit
 val __SetConfig   : (string, int) -> unit effect { configuration }
 
 function __PrintConfig (cfg, ty, value, desc) = {
-  prerr_ln(cfg ^-^ " (" ^-^ ty ^-^ ") default = " ^-^ value);
+  prerr_ln(cfg ^ " (" ^ ty ^ ") default = " ^ value);
   match (desc) {
-    Some(d) => { prerr_ln("    " ^-^ d) },
+    Some(d) => { prerr_ln("    " ^ d) },
     _ => { () }
   }
 }
@@ -75,8 +75,8 @@ function __SetConfig (arg, value) = {
     // Default case
     _ => {
       let v = dec_str(value);
-      let q = "'" ^-^ arg ^-^ "' = '" ^-^ v ^-^ "'";
-      prerr_ln("[Sail] ERROR: Unrecognized config: " ^-^ q ^-^ "; ignoring...");
+      let q = "'" ^ arg ^ "' = '" ^ v ^ "'";
+      prerr_ln("[Sail] ERROR: Unrecognized config: " ^ q ^ "; ignoring...");
     }
   }
 }
