@@ -45,13 +45,15 @@ specSources
   -> m [FilePath]
   -- ^ Resulting list of Sail source files.
 specSources mainFile
-  = pure $ preamble <> setup <> decoder <> elfMain
+  = pure $ preamble <> setup <> decoder <> execute <> elfMain
   where
     preamble = [ src "preamble", gen "hexbits" ]
     setup    = map src [ "basics", "config" ]
     decoder  = [ src "decode/prologue" ]
             <> map gen [ "decode/base" ]
             <> [ src "decode/epilogue" ]
+    execute  = [ src "execute/prologue" ]
+            <> [ src "execute/epilogue" ]
     elfMain  = [ src (fromMaybe "elfmain" mainFile) ]
 
     -- source files which are hand-written (live under ./src)

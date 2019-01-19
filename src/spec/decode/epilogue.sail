@@ -4,7 +4,15 @@
 */
 
 /* -------------------------------------------------------------------------- */
-/* -- Close scattered defs with an exception clause ------------------------- */
+
+/* -- Close mapping clauses with illegal fallthrough case -- */
+
+union clause ast =   ILLEGAL : bits(32)
+union clause ast = C_ILLEGAL : bits(16)
+mapping clause encdec_base =   ILLEGAL(s) <-> s
+mapping clause encdec_comp = C_ILLEGAL(s) <-> s
+function clause print_insn   ILLEGAL(s) =   "illegal " ^-^ bits_str(s)
+function clause print_insn C_ILLEGAL(s) = "c.illegal " ^-^ bits_str(s)
 
 /* -- Close all the scattered definitions -- */
 
@@ -18,11 +26,11 @@ end ast
 val cast insn_to_string : ast -> string
 function insn_to_string i = print_insn(i)
 
-val decode_base : bits(32) -> option(ast) effect pure
-function decode_base bv = Some(encdec_base(bv))
+val decode_base : bits(32) -> ast effect pure
+function decode_base bv = encdec_base(bv)
 
-val decode_comp : bits(16) -> option(ast) effect pure
-function decode_comp bv = Some(encdec_comp(bv))
+val decode_comp : bits(16) -> ast effect pure
+function decode_comp bv = encdec_comp(bv)
 
 val encode_base : ast -> bits(32) effect pure
 function encode_base bv = encdec_base(bv)

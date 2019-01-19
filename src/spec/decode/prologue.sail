@@ -4,6 +4,7 @@
 */
 
 /* -------------------------------------------------------------------------- */
+
 mapping bool_not_bits : bool <-> bits(1) = {
   true   <-> 0b0,
   false  <-> 0b1
@@ -45,7 +46,7 @@ scattered mapping encdec_comp
 
 /* Function for printing things. TODO: Replace with <-> string mapping. */
 val print_insn : ast -> string
-scattered mapping print_insn
+scattered function print_insn
 
 /* TODO FIXME: no compressed ones yet, so fake one */
 union clause ast = C_NOP : unit

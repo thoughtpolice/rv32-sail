@@ -21,7 +21,8 @@ union FetchResult = {
 /* Non-compressed instructions have low-half LSBs of 0x00 */
 function isCompressed(h : xhalf_t) -> bool = not_bool(h[1..0] == 0b11)
 
-/* Prefetch a RISC-V instruction -- importantly, predecode the given
+/*
+** Prefetch a RISC-V instruction -- importantly, predecode the given
 ** PC to determine if we have a compressed instruction or not.
 */
 val elf_prefetch : xlen_t -> FetchResult effect { rmem, rreg, wreg }
@@ -38,9 +39,13 @@ function elf_prefetch (pc) = {
   }
 }
 
+/*
+** Take a fetched instruction from memory, decode it, and handle any decoding
+** errors.
+*/
 val elf_fetch : unit -> unit effect { rmem, rreg, wreg }
 function elf_fetch () = {
-  match elf_prefetch(NextPC) {
+  match elf_prefetch(PC) {
     FetchError(ex, epc) => {
       print_endline("fetch erro?");
       ()
@@ -48,11 +53,11 @@ function elf_fetch () = {
 
     FetchedCompressed(h) => {
       match decode_comp(h) {
-        None() => {
+        C_ILLEGAL(_) => {
           print_endline("illegal compressed instruction?");
           ()
         },
-        Some(_) => {
+        _ => {
           NextPC = NextPC + 2;
           ()
         }
@@ -61,23 +66,30 @@ function elf_fetch () = {
 
     FetchedBase(w) => {
       match decode_base(w) {
-        None() => {
+        ILLEGAL(_) => {
           print_endline("illegal base instruction?");
           ()
         },
-        Some(i) => {
+        i => {
           print_endline(i);
           NextPC = NextPC + 4;
           ()
         }
       }
     }
-  }
+  };
+
+  PC = NextPC;
 }
 
 /* -------------------------------------------------------------------------- */
 /* -- Decode, Execute driver ------------------------------------------------ */
 
+/*
+** take a fetched instruction and dispatch the execution function, as well as
+** increasing the cycle count. returns 'true' if the cycle limit has NOT been
+** reached; returns false if it has.
+*/
 val elf_execute : unit -> bool
 function elf_execute () = {
 
@@ -87,7 +99,8 @@ function elf_execute () = {
 /* -------------------------------------------------------------------------- */
 /* -- Entry point and driver for the ELF loader ----------------------------- */
 
-/* initialize_regs(pc): initialize the register file, and set the initial
+/*
+** initialize_regs(pc): initialize the register file, and set the initial
 ** program load point to the specified address.
 */
 val initialize_regs : xlen_t -> unit effect { wreg }
@@ -102,7 +115,6 @@ function initialize_regs(pc) = {
 ** and it's been reached, this function returns false. otherwise, it always
 ** returns true.
 */
-
 val churn : unit -> bool effect { rmem, rreg, wreg }
 function churn () = {
   elf_fetch(); elf_execute();
@@ -112,7 +124,6 @@ function churn () = {
 ** print_stats(start_time): Print some execution stats about the current
 ** CPU, given the time when the CPU started up.
 */
-
 val print_stats : int -> unit effect { rreg }
 function print_stats(start_time) = {
   end_time = get_time_ns();

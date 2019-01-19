@@ -30,7 +30,6 @@ function __CfgExtensionC enabled = { __cfg_enableExtensionC = enabled }
 /* -------------------------------------------------------------------------- */
 /* -- {List,Set}Config ------------------------------------------------------ */
 
-
 val __PrintConfig : (string, string, string, option(string)) -> unit
 val __ListConfig  : unit -> unit
 val __SetConfig   : (string, int) -> unit effect { configuration }
