@@ -231,6 +231,7 @@ genPrintInsnHead (fixupName -> nam) ty = caseHacks <> "function clause print_ins
              <> "function clause print_insn ADDI(imm, 0b00000, rd) = \"li \" ^ rd ^ \", \" ^ bits_str(imm)\n"
              <> "function clause print_insn ADDI(0b000000000000, rs1, rd) = \"mv \" ^ rd ^ \", \" ^ rs1 \n"
       "JAL"  -> "function clause print_insn JAL(imm, 0b00000) = \"j 0x\" ^ hex_bits_21(imm)\n"
+      "JALR" -> "function clause print_insn JALR(0b000000000000, 0b00001, 0b00000) = \"ret\"\n"
       _      -> mempty
 
 genPrintInsnBody (lowerName -> nam) ty = start <> " ^ " <> body
