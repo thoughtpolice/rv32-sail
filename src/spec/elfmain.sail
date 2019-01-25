@@ -71,7 +71,7 @@ function elf_fetch () = {
           ()
         },
         i => {
-          print_ln(i);
+          print_ln(bits_str(PC) ^ ": " ^ i);
           NextPC = NextPC + 4;
           ()
         }
