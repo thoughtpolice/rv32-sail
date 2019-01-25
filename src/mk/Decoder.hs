@@ -225,7 +225,11 @@ itypeToCtorTy ty = case ty of
 --
 
 genPrintInsnHead (fixupName -> nam) ty =
+  nopHack <>
   "function clause print_insn " <> nam <> itypeToCtorTy ty
+  where
+    nopHack | nam /= "ADDI" = mempty
+            | otherwise = "function clause print_insn ADDI(0b000000000000, 0b00000, 0b00000) = \"nop\"\n"
 
 genPrintInsnBody (lowerName -> nam) ty = start <> " ^ " <> body
   where
