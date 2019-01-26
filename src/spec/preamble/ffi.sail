@@ -61,6 +61,8 @@ val sub_vec_int = {c: "sub_bits_int",  _: "sub_vec_int"} : forall 'n. (bits('n),
 
 // -- rts functions
 
+val print = "print" : string -> unit
+val prerr = "prerr" : string -> unit
 val print_ln = "print_endline" : string -> unit
 val prerr_ln = "prerr_endline" : string -> unit
 

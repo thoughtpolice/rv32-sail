@@ -148,6 +148,23 @@ function dump_info(verbose, dump_rate, start_time) = {
 }
 
 /*
+** print_regs(): dump the register set at the end of emulation.
+*/
+val print_regs : unit -> unit effect { rreg }
+function print_regs () = {
+  prerr_ln("[Sail] Register dump:");
+
+  foreach (i from 0 to 31) {
+    let idx = to_bits(5, i);
+    let r = if (idx == 0) then "x0" else gp_regbits_to_string(idx);
+    let v = X(idx);
+    prerr(r ^ ":\t" ^ bits_str(v) ^ " ");
+    if (mod(i, 4) == 3) then { prerr("\n"); }
+  };
+  prerr_ln("")
+}
+
+/*
 ** main(): entry point for the ELF loader. also prints per-iteration stats
 ** if asked. The arguments for the executable will already be parsed by this
 ** point in the runtime system.
@@ -174,6 +191,7 @@ function main() = {
   };
 
   print_ln("\n[Sail] Finished!");
+  print_regs();
   print_stats(start_time);
 }
 
