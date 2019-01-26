@@ -108,11 +108,15 @@ union exception = {
   EInvalidInstrBase : bits(32),
   EInvalidInstrComp : bits(16),
   EFeatureDisabled  : string,
-  ENotImplemented   : string
+  ENotImplemented   : string,
+  EImpossible       : string,
 }
 
 val nih : forall ('a : Type). string -> 'a effect {escape}
 function nih m = throw(ENotImplemented(m))
+
+val impossible : forall ('a : Type). string -> 'a effect {escape}
+function impossible m = throw(EImpossible(m))
 
 /* -------------------------------------------------------------------------- */
 /* -- El Fin (basics.sail) -------------------------------------------------- */

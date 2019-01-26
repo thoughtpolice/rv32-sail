@@ -82,14 +82,21 @@ function elf_fetch () = {
 
 /*
 ** take a fetched instruction and dispatch the execution function, as well as
-** increasing the cycle count. returns 'true' if the cycle limit has NOT been
-** reached; returns false if it has.
+** increasing the cycle count. returns 'true' if we should continue executing
+** and fetching new instructions, or 'false' otherwise (e.g. EBREAK or cycle
+** limit is reached).
 */
 val elf_execute : ast -> bool effect { escape, wmem, rmem, wreg, rreg }
-function elf_execute ast = {
-  execute(ast);
-  PC = NextPC;
-  not_bool (cycle_limit_reached());
+function elf_execute ast = match ast {
+  EBREAK() => {
+    prerr_ln("[Sail] Trap (EBREAK) encountered - exiting");
+    false
+  },
+  instr => {
+    execute(ast);
+    PC = NextPC;
+    not_bool (cycle_limit_reached())
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -187,7 +194,8 @@ function main() = {
     EInvalidInstrBase(w) => { prerr_ln("[Sail] ERROR: Invalid instruction (base encoding) found: " ^ bits_str(w)) },
     EInvalidInstrComp(c) => { prerr_ln("[Sail] ERROR: Invalid instruction (compressed encoding) found: " ^ bits_str(c)) },
     EFeatureDisabled(f)  => { prerr_ln("[Sail] ERROR: Feature Disabled - '" ^ f ^ "'") },
-    ENotImplemented(f)   => { prerr_ln("[Sail] ERROR: Not Invented Here - '" ^ f ^ "'") }
+    ENotImplemented(f)   => { prerr_ln("[Sail] ERROR: Not Invented Here - '" ^ f ^ "'") },
+    EImpossible(i)       => { prerr_ln("[Sail] IMPOSSIBLE ERROR (GHOSTS IN THE SHELL): " ^ i) }
   };
 
   print_ln("\n[Sail] Finished!");

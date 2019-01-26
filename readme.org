@@ -2,7 +2,7 @@
 
 [[https://img.shields.io/badge/version-0.0pre-orange.svg]] [[https://img.shields.io/badge/license-MIT-blue.svg]]
 
-[[https://risc-v.org][RISC-V]] software emulator for the RV32IMAC core, written in [[https://www.cl.cam.ac.uk/~pes20/sail/][Sail]] and compiled to
+[[https://risc-v.org][RISC-V]] software emulator for the RV32-IMAC core, written in [[https://www.cl.cam.ac.uk/~pes20/sail/][Sail]] and compiled to
 a static emulator executable, using [[https://nixos.org/nix][Nix]]. It also includes a bunch of tools for
 doing bare-metal RISC-V software on top of the simulator easily.
 
