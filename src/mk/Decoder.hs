@@ -193,7 +193,7 @@ itypeToMapP ty =
     STy f3 o    -> is [ "imm1", "rs2", "rs1", i2b 3 f3, "imm0", op o ]
     BTy f3 o    -> is [ "imm1", "rs2", "rs1", i2b 3 f3, "imm0", op o ]
     UTy o       -> is [ "imm", "rd", op o ]
-    JTy o       -> is [ "imm", "rd", op o ]
+    JTy o       -> is [ "uj_imm(imm)", "rd", op o ]
 
     A0Ty f5 f5' f3 o ->
       is [ i2b 5 f5, "aq", "rl", i2b 5 f5', "rs1", i2b 3 f3, "rd", op o ]
@@ -254,6 +254,7 @@ genPrintInsnBody (lowerName -> nam) ty = start <> " ^ " <> body
       STy _ _     -> (quote nam, commafy [ "rs2", "bits_str(append(imm1,imm0)) ^ " <> parenfiy "rs1" ])
 
       UTy _       -> (quote nam, commafy [ "rd", "bits_str(imm)" ])
+      JTy _       -> (quote nam, commafy [ "rd", "hex_bits_21(imm)" ])
 
       -- TODO FIXME
       R4Ty _ _    -> (quote nam, commafy [ "rd", "rs1", "rs2", "rs3" ])
@@ -264,7 +265,6 @@ genPrintInsnBody (lowerName -> nam) ty = start <> " ^ " <> body
 
 {--
       BTy _ _     -> "(imm1, rs2, rs1, imm0)"
-      JTy _       -> "(imm, rd)"
 
       A0Ty _ _ _ _ -> (quote nam, quote "(aq, rl, rs1, rd)")
       A1Ty _ _ _   -> "(aq, rl, rs2, rs1, rd)"

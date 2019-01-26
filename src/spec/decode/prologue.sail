@@ -17,19 +17,26 @@ type imm5  = bits(5)
 type imm7  = bits(7)
 type imm12 = bits(12)
 type imm20 = bits(20)
+type imm21 = bits(21)
 
 type Rtype  = (regbits, regbits, regbits)
 type Itype  = (imm12, regbits, regbits)
 type Stype  = (imm7, regbits, regbits, imm5)
 type Btype  = (imm7, regbits, regbits, imm5)
 type Utype  = (imm20, regbits)
-type Jtype  = (imm20, regbits)
+type Jtype  = (imm21, regbits)
 type Mtype  = (bits(4), bits(4)) // fences
 
 type R4type = (regbits, regbits, regbits, frm, regbits)
 
 type A0type = (bits(1), bits(1), regbits, regbits)
 type A1type = (bits(1), bits(1), regbits, regbits, regbits)
+
+/* -------------------------------------------------------------------------- */
+
+mapping uj_imm : bits(21) <-> bits(20) = {
+  (imm_19 @ imm_7_0 @ imm_8 @ imm_18_13 @ imm_12_9 @ 0b0) <-> (imm_19 : bits(1) @ imm_18_13 : bits(6) @ imm_12_9 : bits(4) @ imm_8 : bits(1) @ imm_7_0 : bits(8))
+}
 
 /* -------------------------------------------------------------------------- */
 
