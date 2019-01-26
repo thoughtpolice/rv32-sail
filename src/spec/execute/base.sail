@@ -6,6 +6,9 @@
 /* -------------------------------------------------------------------------- */
 /* -- Primary execute clause defns ------------------------------------------ */
 
+// -------------------------------------
+// ---- Immediate loads, etc
+
 function clause execute LUI(imm, rd) = {
   let off : xlen_t = exts(imm @ 0x000);
   X(rd) = off;
@@ -15,6 +18,9 @@ function clause execute AUIPC(imm, rd) = {
   let off : xlen_t = exts(imm @ 0x000);
   X(rd) = PC + off;
 }
+
+// -------------------------------------
+// ---- Branches
 
 function clause execute JAL(imm, rd) = {
   let npc : xlen_t = exts(imm) + PC;
@@ -32,6 +38,9 @@ function clause execute JALR(imm, rs1, rd) = {
   X(rd) = NextPC;
   PC = npc;
 }
+
+// -------------------------------------
+// ---- Fundamental R/R & R/I ops
 
 function clause execute ADD(rs2, rs1, rd)    = X(rd) = X(rs1) + X(rs2)
 function clause execute SUB(rs2, rs1, rd)    = X(rd) = X(rs1) - X(rs2)
@@ -76,6 +85,32 @@ function clause execute SLTIU(imm, rs1, rd) = {
   let res = unsigned(X(rs1)) < unsigned(_imm);
   X(rd) = extz(res);
 }
+
+// -------------------------------------
+// ---- Loads and stores
+
+// -------------------------------------
+// ---- ECALL/EBREAK
+
+function clause execute ECALL()  = { () }
+function clause execute EBREAK() = { () }
+
+// -------------------------------------
+// ---- Fences
+
+function clause execute FENCE(_, _) = { () }
+function clause execute FENCE_I() = { () }
+
+// -------------------------------------
+// ---- CSRs
+
+function clause execute CSRRW(csr, rs1, rd) = { () }
+function clause execute CSRRS(csr, rs1, rd) = { () }
+function clause execute CSRRC(csr, rs1, rd) = { () }
+
+function clause execute CSRRWI(csr, zimm, rd) = { () }
+function clause execute CSRRSI(csr, zimm, rd) = { () }
+function clause execute CSRRCI(csr, zimm, rd) = { () }
 
 /* -------------------------------------------------------------------------- */
 /* -- El Fin (execute/base.sail) -------------------------------------------- */
