@@ -135,13 +135,13 @@ function print_stats(start_time) = {
 }
 
 /*
-** dump_info(verbose, rate, start_time): Dump information about the
-** CPU occasionally, if 'verbose' is true, at a rate of every 'rate'
-** instructions executed. start_time should be when the CPU started
+** dump_info(verbose, start_time): Dump information about the CPU occasionally,
+** if ${verbose} is true, at a rate specified by the dumpStatCycleRate
+** configuration register. ${start_time} should be when the CPU started.
 */
-val dump_info : (bool, int, int) -> unit effect { rreg }
-function dump_info(verbose, dump_rate, start_time) = {
-  if (mod(InstrCount, dump_rate) == 0) & verbose then {
+val dump_info : (bool, int) -> unit effect { rreg }
+function dump_info(verbose, start_time) = {
+  if (mod(InstrCount, __cfg_dumpStatsCycleRate) == 0) & verbose then {
     print_ln("");
     print_stats(start_time);
   };
@@ -182,7 +182,7 @@ function main() = {
   print_ln("[Sail] Executing reset vector...");
 
   try {
-    while (churn ()) do { dump_info(verbose0, 10000000, start_time) };
+    while (churn ()) do { dump_info(verbose0, start_time) };
   } catch {
     EInvalidInstrBase(w) => { prerr_ln("[Sail] ERROR: Invalid instruction (base encoding) found: " ^ bits_str(w)) },
     EInvalidInstrComp(c) => { prerr_ln("[Sail] ERROR: Invalid instruction (compressed encoding) found: " ^ bits_str(c)) },

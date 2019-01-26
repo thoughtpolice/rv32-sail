@@ -7,6 +7,7 @@
 /* -- Emulator Configuration Settings --------------------------------------- */
 
 register configuration __cfg_disassembleOps : bool = false
+register configuration __cfg_dumpStatsCycleRate : int = 10000000
 
 register configuration __cfg_enableExtensionM : bool = false
 register configuration __cfg_enableExtensionA : bool = false
@@ -50,6 +51,7 @@ function __PrintConfig (cfg, ty, value, desc) = {
 function __ListConfig () = {
   prerr_ln("");
   __PrintConfig("debug.disasm_ops", "boolean", "FALSE", Some("Disassemble fetched/executed opcodes"));
+  __PrintConfig("debug.stat_dump_rate", "integer", "10000000", Some("How often (in cycles) to dump emulator info. Only in effect when (verbosity & 0b1)"));
 
   prerr_ln("");
   __PrintConfig("cpu.has_ext_m", "boolean", "FALSE", Some("Enable -M Mult/Div Extension"));
@@ -64,6 +66,9 @@ function __SetConfig (arg, value) = {
   match () {
     () if arg == "debug.disasm_ops" => {
       __CfgDisassembleOps(value == 1);
+    },
+    () if arg == "debug.stat_dump_rate" => {
+      __cfg_dumpStatsCycleRate = value;
     },
 
     // Extension features
