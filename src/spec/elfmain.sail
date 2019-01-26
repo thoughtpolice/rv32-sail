@@ -43,7 +43,7 @@ function elf_prefetch (pc) = {
 ** Take a fetched instruction from memory, decode it, and handle any decoding
 ** errors.
 */
-val elf_fetch : unit -> unit effect { rmem, rreg, wreg }
+val elf_fetch : unit -> unit effect { escape, rmem, rreg, wreg }
 function elf_fetch () = {
   match elf_prefetch(PC) {
     FetchError(ex, epc) => {
@@ -53,10 +53,7 @@ function elf_fetch () = {
 
     FetchedCompressed(h) => {
       match decode_comp(h) {
-        C_ILLEGAL(_) => {
-          print_ln("illegal compressed instruction?");
-          ()
-        },
+        C_ILLEGAL(c) => { throw(EInvalidInstrComp(c)); },
         _ => {
           NextPC = NextPC + 2;
           ()
@@ -66,10 +63,7 @@ function elf_fetch () = {
 
     FetchedBase(w) => {
       match decode_base(w) {
-        ILLEGAL(_) => {
-          print_ln("illegal base instruction?");
-          ()
-        },
+        ILLEGAL(c) => { throw(EInvalidInstrBase(c)); },
         i => {
           print_ln(bits_str(PC) ^ ": " ^ i);
           NextPC = NextPC + 4;
@@ -115,7 +109,7 @@ function initialize_regs(pc) = {
 ** and it's been reached, this function returns false. otherwise, it always
 ** returns true.
 */
-val churn : unit -> bool effect { rmem, rreg, wreg }
+val churn : unit -> bool effect { escape, rmem, rreg, wreg }
 function churn () = {
   elf_fetch(); elf_execute();
 }
@@ -155,7 +149,7 @@ function dump_info(verbose, dump_rate, start_time) = {
 ** if asked. The arguments for the executable will already be parsed by this
 ** point in the runtime system.
 */
-val main : unit -> unit effect { rmem, rreg, wreg }
+val main : unit -> unit effect { escape, rmem, rreg, wreg }
 function main() = {
   let verbosity  = get_verbosity();
   let verbose0   = verbosity[0] == bitone;

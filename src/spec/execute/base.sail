@@ -187,25 +187,25 @@ function clause execute LHU(imm, rs1, rd) = {
 // -------------------------------------
 // ---- ECALL/EBREAK
 
-function clause execute ECALL()  = { () }
-function clause execute EBREAK() = { () }
+function clause execute ECALL()  = { nih("ECALL") }
+function clause execute EBREAK() = { nih("EBREAK") }
 
 // -------------------------------------
 // ---- Fences
 
-function clause execute FENCE(_, _) = { () }
-function clause execute FENCE_I() = { () }
+function clause execute FENCE(_, _) = { nih("FENCE") }
+function clause execute FENCE_I() = { nih("FENCE.I") }
 
 // -------------------------------------
 // ---- CSRs
 
-function clause execute CSRRW(csr, rs1, rd) = { () }
-function clause execute CSRRS(csr, rs1, rd) = { () }
-function clause execute CSRRC(csr, rs1, rd) = { () }
+function clause execute CSRRW(csr, rs1, rd) = { nih("CSRRW") }
+function clause execute CSRRS(csr, rs1, rd) = { nih("CSRRS") }
+function clause execute CSRRC(csr, rs1, rd) = { nih("CSRRC") }
 
-function clause execute CSRRWI(csr, zimm, rd) = { () }
-function clause execute CSRRSI(csr, zimm, rd) = { () }
-function clause execute CSRRCI(csr, zimm, rd) = { () }
+function clause execute CSRRWI(csr, zimm, rd) = { nih("CSRRWI") }
+function clause execute CSRRSI(csr, zimm, rd) = { nih("CSRRSI") }
+function clause execute CSRRCI(csr, zimm, rd) = { nih("CSRRCI") }
 
 /* -------------------------------------------------------------------------- */
 /* -- El Fin (execute/base.sail) -------------------------------------------- */

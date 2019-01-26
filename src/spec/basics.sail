@@ -105,17 +105,13 @@ overload MEM = { __RISCV_read, __RISCV_write }
 /* -- Exceptions ------------------------------------------------------------ */
 
 union exception = {
-  EInvalidInstr : unit
+  EInvalidInstrBase : bits(32),
+  EInvalidInstrComp : bits(16),
+  ENotImplemented   : string
 }
 
-val raise_exc : forall ('o : Type). exception -> 'o effect {escape}
-function raise_exc exc = {
-  match exc {
-    _ => ()
-  };
-
-  throw exc
-}
+val nih : forall ('a : Type). string -> 'a effect {escape}
+function nih m = throw(ENotImplemented(m))
 
 /* -------------------------------------------------------------------------- */
 /* -- El Fin (basics.sail) -------------------------------------------------- */
