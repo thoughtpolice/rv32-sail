@@ -9,15 +9,8 @@
 // -------------------------------------
 // ---- Immediate loads, etc
 
-function clause execute LUI(imm, rd) = {
-  let off : xlen_t = exts(imm @ 0x000);
-  X(rd) = off;
-}
-
-function clause execute AUIPC(imm, rd) = {
-  let off : xlen_t = exts(imm @ 0x000);
-  X(rd) = PC + off;
-}
+function clause execute LUI(imm, rd)   = { X(rd) = exts(imm @ 0x000)      }
+function clause execute AUIPC(imm, rd) = { X(rd) = exts(imm @ 0x000) + PC }
 
 // -------------------------------------
 // ---- Branches
@@ -27,7 +20,7 @@ function clause execute JAL(imm, rd) = {
 
   // TODO FIXME: handle misaligned npc
   X(rd) = NextPC;
-  PC = npc;
+  NextPC = npc;
 }
 
 function clause execute JALR(imm, rs1, rd) = {
@@ -36,7 +29,7 @@ function clause execute JALR(imm, rs1, rd) = {
 
   // TODO FIXME: handle misaligned npc
   X(rd) = NextPC;
-  PC = npc;
+  NextPC = npc;
 }
 
 function clause execute BEQ(imm, rs2, rs1) = {
@@ -44,7 +37,7 @@ function clause execute BEQ(imm, rs2, rs1) = {
   let npc : xlen_t = PC + off;
 
   if (X(rs1) == X(rs2)) then {
-    PC = npc;
+    NextPC = npc;
   }
 }
 
@@ -53,7 +46,7 @@ function clause execute BNE(imm, rs2, rs1) = {
   let npc : xlen_t = PC + off;
 
   if (not_bool(X(rs1) == X(rs2))) then {
-    PC = npc;
+    NextPC = npc;
   }
 }
 
@@ -62,7 +55,7 @@ function clause execute BLT(imm, rs2, rs1) = {
   let npc : xlen_t = PC + off;
 
   if (signed(X(rs1)) < signed(X(rs2))) then {
-    PC = npc;
+    NextPC = npc;
   }
 }
 
@@ -71,7 +64,7 @@ function clause execute BGE(imm, rs2, rs1) = {
   let npc : xlen_t = PC + off;
 
   if (signed(X(rs1)) >= signed(X(rs2))) then {
-    PC = npc;
+    NextPC = npc;
   }
 }
 
@@ -80,7 +73,7 @@ function clause execute BLTU(imm, rs2, rs1) = {
   let npc : xlen_t = PC + off;
 
   if (unsigned(X(rs1)) < unsigned(X(rs2))) then {
-    PC = npc;
+    NextPC = npc;
   }
 }
 
@@ -89,7 +82,7 @@ function clause execute BGEU(imm, rs2, rs1) = {
   let npc : xlen_t = PC + off;
 
   if (unsigned(X(rs1)) >= unsigned(X(rs2))) then {
-    PC = npc;
+    NextPC = npc;
   }
 }
 

@@ -50,37 +50,31 @@ function elf_prefetch (pc) = {
 ** Take a fetched instruction from memory, decode it, and handle any decoding
 ** errors.
 */
-val elf_fetch : unit -> unit effect { escape, rmem, rreg, wreg }
+val elf_fetch : unit -> ast effect { escape, rmem, rreg, wreg }
 function elf_fetch () = {
-  match elf_prefetch(PC) {
+  let instr : ast = match elf_prefetch(PC) {
     FetchError(ex, _) => { throw(ex) },
 
     FetchedCompressed(h) => {
       match decode_comp(h) {
         C_ILLEGAL(c) => { throw(EInvalidInstrComp(c)); },
-        _ => {
-          NextPC = NextPC + 2;
-          ()
-        }
+        i => { NextPC = NextPC + 2; i }
       }
     },
 
     FetchedBase(w) => {
       match decode_base(w) {
         ILLEGAL(c) => { throw(EInvalidInstrBase(c)); },
-        i => {
-          if (__cfg_disassembleOps) then {
-            print_ln(bits_str(PC) ^ ": " ^ i);
-          };
-
-          NextPC = NextPC + 4;
-          ()
-        }
+        i => { NextPC = NextPC + 4; i }
       }
     }
   };
 
-  PC = NextPC;
+  if (__cfg_disassembleOps) then {
+    prerr_ln("[Sail] Fetch - " ^ bits_str(PC) ^ ": " ^ instr);
+  };
+
+  instr
 }
 
 /* -------------------------------------------------------------------------- */
@@ -91,9 +85,10 @@ function elf_fetch () = {
 ** increasing the cycle count. returns 'true' if the cycle limit has NOT been
 ** reached; returns false if it has.
 */
-val elf_execute : unit -> bool
-function elf_execute () = {
-
+val elf_execute : ast -> bool effect { escape, wmem, rmem, wreg, rreg }
+function elf_execute ast = {
+  execute(ast);
+  PC = NextPC;
   not_bool (cycle_limit_reached());
 }
 
@@ -116,9 +111,10 @@ function initialize_regs(pc) = {
 ** and it's been reached, this function returns false. otherwise, it always
 ** returns true.
 */
-val churn : unit -> bool effect { escape, rmem, rreg, wreg }
+val churn : unit -> bool effect { escape, rmem, wmem, rreg, wreg }
 function churn () = {
-  elf_fetch(); elf_execute();
+  let ast = elf_fetch();
+  elf_execute(ast)
 }
 
 /*
@@ -156,7 +152,7 @@ function dump_info(verbose, dump_rate, start_time) = {
 ** if asked. The arguments for the executable will already be parsed by this
 ** point in the runtime system.
 */
-val main : unit -> unit effect { escape, rmem, rreg, wreg }
+val main : unit -> unit effect { escape, rmem, wmem, rreg, wreg }
 function main() = {
   let verbosity  = get_verbosity();
   let verbose0   = verbosity[0] == bitone;
