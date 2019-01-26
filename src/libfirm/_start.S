@@ -54,6 +54,7 @@ start:
 
 	/* call main */
 	jal ra, main
+	mv t1, a0 /* save return */
 
 	/* print "DONE\n" */
 	addi a0,zero,0
@@ -70,9 +71,6 @@ start:
 	addi a1,zero,'\n'
 	ecall
 
-	li a0, 0x20000000
-	li a1, 123456789
-	sw a1,0(a0)
-
 	/* trap */
+	mv a0, t1
 	ebreak
