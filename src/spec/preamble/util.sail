@@ -23,5 +23,10 @@ function bit_to_bool b = match b {
   bitzero => false
 }
 
+val sra32 : (bits(32), bits(5)) -> bits(32)
+function sra32 (v, shift) =
+    let v64 : bits(64) = exts(v) in
+    shiftright_bits(v64,shift)[31..0]
+
 /* -------------------------------------------------------------------------- */
 /* -- El Fin (preamble/util.sail) ------------------------------------------- */

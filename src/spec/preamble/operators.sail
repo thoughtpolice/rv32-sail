@@ -23,8 +23,8 @@ overload operator <  = { lt_atom, lt_int, lt_real }
 overload operator /  = { div_int, div, quotient_nat, quotient, quotient_real }
 overload operator %  = { mod_int, mod, modulus }
 
-overload operator << = { shiftleft }
-overload operator >> = { shiftright }
+overload operator << = { shiftleft_int,  shiftleft_bits }
+overload operator >> = { shiftright_int, shiftright_bits }
 
 /* -------------------------------------------------------------------------- */
 /* -- El Fin (preamble/operators.sail) -------------------------------------- */

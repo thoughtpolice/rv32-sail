@@ -41,11 +41,14 @@ val "read_ram" : forall 'n 'm.
 
 // -- vectors
 
-val shiftleft = "shiftl" : forall 'n ('ord : Order).
+val shiftleft_int = "shiftl" : forall 'n ('ord : Order).
     (vector('n, 'ord, bit), int) -> vector('n, 'ord, bit) effect pure
 
-val shiftright = "shiftr" : forall 'n ('ord : Order).
+val shiftright_int = "shiftr" : forall 'n ('ord : Order).
     (vector('n, 'ord, bit), int) -> vector('n, 'ord, bit) effect pure
+
+val shiftleft_bits  = "shift_bits_left"  : forall 'n 'm. (bits('n), bits('m)) -> bits('n)
+val shiftright_bits = "shift_bits_right" : forall 'n 'm. (bits('n), bits('m)) -> bits('n)
 
 val add_vec = {c: "sub_bits", _: "sub_vec"} : forall 'n. (bits('n), bits('n)) -> bits('n)
 val sub_vec = {c: "sub_bits", _: "sub_vec"} : forall 'n. (bits('n), bits('n)) -> bits('n)
