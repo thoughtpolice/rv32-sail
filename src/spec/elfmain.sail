@@ -31,7 +31,14 @@ function elf_prefetch (pc) = {
 
   let ilo : xhalf_t = MEM(pc, 2);
 
-  if isCompressed(ilo) then FetchedCompressed(ilo)
+  if isCompressed(ilo) then {
+    if (not_bool(__cfg_enableExtensionC)) then {
+      FetchError(EFeatureDisabled("-C (compressed ISA) extension"), pc)
+    } else {
+      FetchError(ENotImplemented("-C (compressed ISA) extension"), pc)
+      // FetchedCompressed(ilo)
+    }
+  }
   else {
     let ihi  : xhalf_t = MEM(pc + 2, 2);
     let insn : xword_t = append(ihi, ilo);
@@ -46,10 +53,7 @@ function elf_prefetch (pc) = {
 val elf_fetch : unit -> unit effect { escape, rmem, rreg, wreg }
 function elf_fetch () = {
   match elf_prefetch(PC) {
-    FetchError(ex, epc) => {
-      print_ln("fetch error?");
-      ()
-    },
+    FetchError(ex, _) => { throw(ex) },
 
     FetchedCompressed(h) => {
       match decode_comp(h) {
@@ -169,6 +173,7 @@ function main() = {
   } catch {
     EInvalidInstrBase(w) => { prerr_ln("[Sail] ERROR: Invalid instruction (base encoding) found: " ^ bits_str(w)) },
     EInvalidInstrComp(c) => { prerr_ln("[Sail] ERROR: Invalid instruction (compressed encoding) found: " ^ bits_str(c)) },
+    EFeatureDisabled(f)  => { prerr_ln("[Sail] ERROR: Feature Disabled - '" ^ f ^ "'") },
     ENotImplemented(f)   => { prerr_ln("[Sail] ERROR: Not Invented Here - '" ^ f ^ "'") }
   };
 
