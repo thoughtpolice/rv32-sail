@@ -212,8 +212,8 @@ itypeToCtor (fixupName -> nam) ty = nam <> itypeToCtorTy ty
 itypeToCtorTy ty = case ty of
   RTy _ _ _   -> "(rs2, rs1, rd)"
   ITy _ _     -> "(imm, rs1, rd)"
-  STy _ _     -> "(imm1, rs2, rs1, imm0)"
-  BTy _ _     -> "(imm1, rs2, rs1, imm0)"
+  STy _ _     -> "(imm1 : bits(7) @ imm0 : bits(5), rs2, rs1)"
+  BTy _ _     -> "(imm1 : bits(7) @ imm0 : bits(5), rs2, rs1)"
   UTy _       -> "(imm, rd)"
   JTy _       -> "(imm, rd)"
 

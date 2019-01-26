@@ -89,21 +89,18 @@ function clause execute SLTIU(imm, rs1, rd) = {
 // -------------------------------------
 // ---- Loads and stores
 
-function clause execute SB(imm1, rs2, rs1, imm0) = {
-  let off : xlen_t = exts(append(imm1, imm0));
-  let ptr : xlen_t = X(rs1) + off;
+function clause execute SB(imm, rs2, rs1) = {
+  let ptr : xlen_t = X(rs1) + exts(imm);
   MEM(ptr, 1) = X(rs2)[7..0];
 }
 
-function clause execute SH(imm1, rs2, rs1, imm0) = {
-  let off : xlen_t = exts(append(imm1, imm0));
-  let ptr : xlen_t = X(rs1) + off;
+function clause execute SH(imm, rs2, rs1) = {
+  let ptr : xlen_t = X(rs1) + exts(imm);
   MEM(ptr, 2) = X(rs2)[15..0];
 }
 
-function clause execute SW(imm1, rs2, rs1, imm0) = {
-  let off : xlen_t = exts(append(imm1, imm0));
-  let ptr : xlen_t = X(rs1) + off;
+function clause execute SW(imm, rs2, rs1) = {
+  let ptr : xlen_t = X(rs1) + exts(imm);
   MEM(ptr, 4) = X(rs2)[31..0];
 }
 
