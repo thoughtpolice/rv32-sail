@@ -161,7 +161,13 @@ function main() = {
   print_ln("[Sail] ELF Initial PC: " ^ hex_str(elf_pc));
   print_ln("[Sail] Executing reset vector...");
 
-  while (churn ()) do { dump_info(verbose0, 10000000, start_time) };
+  try {
+    while (churn ()) do { dump_info(verbose0, 10000000, start_time) };
+  } catch {
+    EInvalidInstrBase(w) => { prerr_ln("[Sail] ERROR: Invalid instruction (base encoding) found: " ^ bits_str(w)) },
+    EInvalidInstrComp(c) => { prerr_ln("[Sail] ERROR: Invalid instruction (compressed encoding) found: " ^ bits_str(c)) },
+    ENotImplemented(f)   => { prerr_ln("[Sail] ERROR: Not Invented Here - '" ^ f ^ "'") }
+  };
 
   print_ln("\n[Sail] Finished!");
   print_stats(start_time);
