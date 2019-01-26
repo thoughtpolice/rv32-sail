@@ -93,7 +93,11 @@ function elf_execute ast = match ast {
     false
   },
   instr => {
-    execute(ast);
+    match instr {
+      ECALL() => { ecall_dispatch() },
+      other   => { execute(other) }
+    };
+
     PC = NextPC;
     not_bool (cycle_limit_reached())
   }
@@ -195,6 +199,7 @@ function main() = {
     EInvalidInstrComp(c) => { prerr_ln("[Sail] ERROR: Invalid instruction (compressed encoding) found: " ^ bits_str(c)) },
     EFeatureDisabled(f)  => { prerr_ln("[Sail] ERROR: Feature Disabled - '" ^ f ^ "'") },
     ENotImplemented(f)   => { prerr_ln("[Sail] ERROR: Not Invented Here - '" ^ f ^ "'") },
+    EInvalidECall(a0)    => { prerr_ln("[Sail] ERROR: Invalid ECall operation - a0=" ^ bits_str(a0)) },
     EImpossible(i)       => { prerr_ln("[Sail] IMPOSSIBLE ERROR (GHOSTS IN THE SHELL): " ^ i) }
   };
 

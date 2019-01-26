@@ -56,19 +56,19 @@ start:
 	jal ra, main
 
 	/* print "DONE\n" */
-	lui a0,0x10000000>>12
+	addi a0,zero,0
 	addi a1,zero,'\n'
-	addi a2,zero,'D'
-	addi a3,zero,'O'
-	addi a4,zero,'N'
-	addi a5,zero,'E'
-	addi a6,zero,'\n'
-	sw a1,0(a0)
-	sw a2,0(a0)
-	sw a3,0(a0)
-	sw a4,0(a0)
-	sw a5,0(a0)
-	sw a6,0(a0)
+	ecall
+	addi a1,zero,'D'
+	ecall
+	addi a1,zero,'O'
+	ecall
+	addi a1,zero,'N'
+	ecall
+	addi a1,zero,'E'
+	ecall
+	addi a1,zero,'\n'
+	ecall
 
 	li a0, 0x20000000
 	li a1, 123456789

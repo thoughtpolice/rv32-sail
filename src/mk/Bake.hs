@@ -54,7 +54,7 @@ specSources mainFile
             <> map gen [ "decode/base" ]
             <> [ src "decode/epilogue" ]
     execute  = map (srcDir "execute") [ "prologue", "base", "epilogue" ]
-    elfMain  = [ src (fromMaybe "elfmain" mainFile) ]
+    elfMain  = [ src "ecall", src (fromMaybe "elfmain" mainFile) ]
 
     -- source files which are hand-written (live under ./src)
     src      x = "src/spec" </> x <.> "sail"

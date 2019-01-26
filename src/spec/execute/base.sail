@@ -150,7 +150,7 @@ function clause execute LW(imm, rs1, rd)  = { X(rd) = __rv32_load(imm, rs1, 4) }
 // -------------------------------------
 // ---- ECALL/EBREAK
 
-function clause execute ECALL()  = { nih("ECALL") }
+function clause execute ECALL()  = { impossible("execute(ECALL) should not occur!") }
 function clause execute EBREAK() = { impossible("execute(EBREAK) should not occur!") }
 
 // -------------------------------------
