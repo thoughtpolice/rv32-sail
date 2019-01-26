@@ -86,6 +86,11 @@ baseInstrs =
   , BaseInstr "ORI"   (ITy 0b110 0b0010011)
   , BaseInstr "ANDI"  (ITy 0b111 0b0010011)
 
+    -- note: immediate shifts are actually I-type variants, but we can't
+    -- disambiguate that in the generated decoder easily because the shift type
+    -- is encoded in the immediate bits of the opcode, which we don't match
+    -- against -- or we'd just have to add a new special case type for just
+    -- these. so instead, we use an R-type which otherwise fits perfectly.
   , BaseInstr "SLLI"  (RTy 0b0000000 0b001 0b0010011)
   , BaseInstr "SRLI"  (RTy 0b0000000 0b101 0b0010011)
   , BaseInstr "SRAI"  (RTy 0b0100000 0b101 0b0010011)
