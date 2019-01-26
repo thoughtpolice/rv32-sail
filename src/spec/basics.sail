@@ -89,11 +89,11 @@ overload X = { rX, wX }
 /* -------------------------------------------------------------------------- */
 /* -- Memory reads/writes --------------------------------------------------- */
 
-val __RISCV_read : forall 'n. (xlen_t, atom('n)) -> bits(8 * 'n) effect {rmem}
+val __RISCV_read : forall 'n. (xlen_t, atom('n)) -> bits(8 * 'n) effect { rmem }
 function __RISCV_read(addr, width) =
   read_ram(32, width, 0x0000_0000, addr)
 
-val __RISCV_write : forall 'n. (xlen_t, atom('n), bits(8 * 'n)) -> unit effect {wmem}
+val __RISCV_write : forall 'n. (xlen_t, atom('n), bits(8 * 'n)) -> unit effect { wmem }
 function __RISCV_write(addr, width, data) =
   let _ = write_ram(32, width, 0x0000_0000, addr, data)
   in ()
