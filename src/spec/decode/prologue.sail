@@ -34,6 +34,9 @@ type A1type = (bits(1), bits(1), regbits, regbits, regbits)
 
 /* -------------------------------------------------------------------------- */
 
+// NOTE: do _NOT_ flip the argument/types in this mapping around. it apparently
+// drives the compiler up the wall, causing an internal compiler error(?)
+// TODO FIXME: submit a bug about this?
 mapping uj_imm : bits(21) <-> bits(20) = {
   (imm_19 @ imm_7_0 @ imm_8 @ imm_18_13 @ imm_12_9 @ 0b0) <-> (imm_19 : bits(1) @ imm_18_13 : bits(6) @ imm_12_9 : bits(4) @ imm_8 : bits(1) @ imm_7_0 : bits(8))
 }
