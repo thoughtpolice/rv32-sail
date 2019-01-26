@@ -65,7 +65,10 @@ function elf_fetch () = {
       match decode_base(w) {
         ILLEGAL(c) => { throw(EInvalidInstrBase(c)); },
         i => {
-          print_ln(bits_str(PC) ^ ": " ^ i);
+          if (__cfg_disassembleOps) then {
+            print_ln(bits_str(PC) ^ ": " ^ i);
+          };
+
           NextPC = NextPC + 4;
           ()
         }

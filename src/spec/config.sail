@@ -6,11 +6,16 @@
 /* -------------------------------------------------------------------------- */
 /* -- Emulator Configuration Settings --------------------------------------- */
 
+register configuration __cfg_disassembleOps : bool = false
+
 register configuration __cfg_enableExtensionM : bool = false
 register configuration __cfg_enableExtensionA : bool = false
 register configuration __cfg_enableExtensionF : bool = false
 register configuration __cfg_enableExtensionD : bool = false
 register configuration __cfg_enableExtensionC : bool = false
+
+val __CfgDisassembleOps : bool -> unit effect { configuration }
+function __CfgDisassembleOps enabled = { __cfg_disassembleOps = enabled }
 
 val __CfgExtensionM : bool -> unit effect { configuration }
 function __CfgExtensionM enabled = { __cfg_enableExtensionM = enabled }
@@ -44,6 +49,9 @@ function __PrintConfig (cfg, ty, value, desc) = {
 
 function __ListConfig () = {
   prerr_ln("");
+  __PrintConfig("debug.disasm_ops", "boolean", "FALSE", Some("Disassemble fetched/executed opcodes"));
+
+  prerr_ln("");
   __PrintConfig("cpu.has_ext_m", "boolean", "FALSE", Some("Enable -M Mult/Div Extension"));
   __PrintConfig("cpu.has_ext_a", "boolean", "FALSE", Some("Enable -A Atomic Extension"));
   __PrintConfig("cpu.has_ext_f", "boolean", "FALSE", Some("Enable -F SP Floating Point Extension"));
@@ -54,6 +62,9 @@ function __ListConfig () = {
 
 function __SetConfig (arg, value) = {
   match () {
+    () if arg == "debug.disasm_ops" => {
+      __CfgDisassembleOps(value == 1);
+    },
 
     // Extension features
     () if arg == "cpu.has_ext_m" => {
