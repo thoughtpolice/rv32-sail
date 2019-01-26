@@ -39,6 +39,61 @@ function clause execute JALR(imm, rs1, rd) = {
   PC = npc;
 }
 
+function clause execute BEQ(imm, rs2, rs1) = {
+  let off : xlen_t = exts(sb_imm(imm) : imm13);
+  let npc : xlen_t = PC + off;
+
+  if (X(rs1) == X(rs2)) then {
+    PC = npc;
+  }
+}
+
+function clause execute BNE(imm, rs2, rs1) = {
+  let off : xlen_t = exts(sb_imm(imm) : imm13);
+  let npc : xlen_t = PC + off;
+
+  if (not_bool(X(rs1) == X(rs2))) then {
+    PC = npc;
+  }
+}
+
+function clause execute BLT(imm, rs2, rs1) = {
+  let off : xlen_t = exts(sb_imm(imm) : imm13);
+  let npc : xlen_t = PC + off;
+
+  if (signed(X(rs1)) < signed(X(rs2))) then {
+    PC = npc;
+  }
+}
+
+function clause execute BGE(imm, rs2, rs1) = {
+  let off : xlen_t = exts(sb_imm(imm) : imm13);
+  let npc : xlen_t = PC + off;
+
+  if (signed(X(rs1)) >= signed(X(rs2))) then {
+    PC = npc;
+  }
+}
+
+function clause execute BLTU(imm, rs2, rs1) = {
+  let off : xlen_t = exts(sb_imm(imm) : imm13);
+  let npc : xlen_t = PC + off;
+
+  if (unsigned(X(rs1)) < unsigned(X(rs2))) then {
+    PC = npc;
+  }
+}
+
+function clause execute BGEU(imm, rs2, rs1) = {
+  let off : xlen_t = exts(sb_imm(imm) : imm13);
+  let npc : xlen_t = PC + off;
+
+  if (unsigned(X(rs1)) >= unsigned(X(rs2))) then {
+    PC = npc;
+  }
+}
+
+
 // -------------------------------------
 // ---- Fundamental R/R & R/I ops
 
