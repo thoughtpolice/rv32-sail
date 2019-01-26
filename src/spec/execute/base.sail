@@ -89,6 +89,49 @@ function clause execute SLTIU(imm, rs1, rd) = {
 // -------------------------------------
 // ---- Loads and stores
 
+function clause execute SB(imm1, rs2, rs1, imm0) = {
+  let off : xlen_t = exts(append(imm1, imm0));
+  let ptr : xlen_t = X(rs1) + off;
+  MEM(ptr, 1) = X(rs2)[7..0];
+}
+
+function clause execute SH(imm1, rs2, rs1, imm0) = {
+  let off : xlen_t = exts(append(imm1, imm0));
+  let ptr : xlen_t = X(rs1) + off;
+  MEM(ptr, 2) = X(rs2)[15..0];
+}
+
+function clause execute SW(imm1, rs2, rs1, imm0) = {
+  let off : xlen_t = exts(append(imm1, imm0));
+  let ptr : xlen_t = X(rs1) + off;
+  MEM(ptr, 4) = X(rs2)[31..0];
+}
+
+function clause execute LB(imm, rs1, rd) = {
+  let ptr : xlen_t = X(rs1) + exts(imm);
+  X(rd) = exts(MEM(ptr, 1));
+}
+
+function clause execute LH(imm, rs1, rd) = {
+  let ptr : xlen_t = X(rs1) + exts(imm);
+  X(rd) = exts(MEM(ptr, 2));
+}
+
+function clause execute LW(imm, rs1, rd) = {
+  let ptr : xlen_t = X(rs1) + exts(imm);
+  X(rd) = MEM(ptr, 4);
+}
+
+function clause execute LBU(imm, rs1, rd) = {
+  let ptr : xlen_t = X(rs1) + exts(imm);
+  X(rd) = extz(MEM(ptr, 1));
+}
+
+function clause execute LHU(imm, rs1, rd) = {
+  let ptr : xlen_t = X(rs1) + exts(imm);
+  X(rd) = extz(MEM(ptr, 2));
+}
+
 // -------------------------------------
 // ---- ECALL/EBREAK
 
