@@ -1,1 +1,2 @@
-Tests from [[https://github.com/riscv/riscv-tests/tree/master/isa/rv32ui]]
+Tests from [[https://github.com/riscv/riscv-tests/tree/master/isa/rv32ui]]. (These
+were originally pilfered from [[https://github.com/cliffordwolf/picorv32][picorv32]], however.)
