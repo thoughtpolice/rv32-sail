@@ -16,7 +16,7 @@ MEMORY {
 SECTIONS {
 	.memory : {
 		. = 0x000000;
-		start*(.text);
+		*_start.S.o(.text);
 		*(.text);
 		*(*);
 		end = .;
