@@ -82,8 +82,8 @@ emulatorRules = do
 
 --------------------------------------------------------------------------------
 
-rvcc :: String -> FilePath -> Action ()
-rvcc arch out = cc src out
+rvcc :: String -> [(String, String)] -> FilePath -> Action ()
+rvcc arch defns out = cc src out
   where
     src = dropDirectory1 (dropExtension out)
     cc  = cc' defaultCcParams
@@ -94,6 +94,7 @@ rvcc arch out = cc src out
                      , "write-strings", "redundant-decls", "strict-prototypes"
                      , "missing-prototypes"
                      ]
+      , ccDefines = defns
       , ccFreestanding = True
       }
 
@@ -121,14 +122,14 @@ libfirmObjs :: Action [FilePath]
 libfirmObjs = ccObjsFromSources "src/libfirm"
 
 libfirmRules :: Rules ()
-libfirmRules = bdir "src/libfirm/*.o" %> rvcc "rv32i"
+libfirmRules = bdir "src/libfirm/*.o" %> rvcc "rv32i" []
 
 demoRules :: Rules ()
 demoRules = do
   let dirToElf x = bdir "demos" </> x <.> "elf"
       getDemos   = getDirectoryDirs "src/demos"
 
-  bdir "src/demos//*.o" %> rvcc "rv32i"
+  bdir "src/demos//*.o" %> rvcc "rv32i" []
   bdir "demos/*.elf" %> \out -> do
     let dir = "src" </> dropDirectory1 (dropExtension out)
     ccObjsFromSources dir >>= rvld "rv32i" out
@@ -142,14 +143,22 @@ demoRules = do
 testRules :: Rules ()
 testRules = do
   let dirToElf x = bdir "t" </> x <.> "elf"
-      _getDemos  = getDirectoryDirs "src/t"
 
-  bdir "src/t//*.o" %> rvcc "rv32i"
-  bdir "t/*.elf" %> \out -> do
-    let dir = "src" </> dropDirectory1 (dropExtension out)
-    ccObjsFromSources dir >>= rvld "rv32i" out
+  bdir "src/t/firmware/*.o" %> rvcc "rv32i" []
+  bdir "src/t/tests/*.o" %> \out -> do
+    let tname = takeFileName (dropExtensions out)
+        defns = [ ("TEST_FUNC_NAME", tname)
+                , ("TEST_FUNC_TXT", show tname)
+                , ("TEST_FUNC_RET", tname <> "_ret")
+                ]
+    rvcc "rv32im" defns out
 
-  "tests" ~> do need =<< (map dirToElf <$> pure [ "firmware" ])
+  bdir "t/smoke.elf" %> \out -> do
+    cObjs <- ccObjsFromSources "src/t/firmware"
+    tObjs <- ccObjsFromSources "src/t/tests"
+    rvld "rv32i" out (cObjs ++ tObjs)
+
+  "tests" ~> do need =<< (map dirToElf <$> pure [ "smoke" ])
 
 --------------------------------------------------------------------------------
 -- Driver
