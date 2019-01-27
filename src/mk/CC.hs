@@ -29,6 +29,7 @@ data CcParams
     , ccIncPaths :: [FilePath]
     , ccLibPaths :: [FilePath]
     , ccLibs     :: [String]
+    , ccDefines  :: [(String, String)]
     , ccMarch    :: Maybe String
     , ccFreestanding :: Bool
     , ccLdFlags  :: [String]
@@ -40,7 +41,7 @@ defaultCcParams = CcParams
   , ccFreestanding = False
   , ccOpt = Speed 1, ccLang = C11
   , ccWarnings = [], ccIncPaths = [], ccLibPaths = []
-  , ccLibs = [], ccLdFlags = [], ccMode = Compile
+  , ccLibs = [], ccLdFlags = [], ccDefines = [], ccMode = Compile
   }
 
 cc1
@@ -51,7 +52,7 @@ cc1
 cc1 CcParams{..} sources out = do
   need sources
   opt <- optLevel
-  cmd cc lang march freestand opt warnings incPaths libPaths
+  cmd cc lang march freestand defines opt warnings incPaths libPaths
     mode [ "-o", out ] sources libs ldflags
 
   where
@@ -86,6 +87,8 @@ cc1 CcParams{..} sources out = do
       Gnu99 -> [ "-std=gnu99" ]
       Gnu11 -> [ "-std=gnu11" ]
 
+    defines = map (\(k,v) -> "-D" <> k <> "=" <> v)
+      ccDefines
 
     optLevel = case ccOpt of
       _ | ccMode == Link -> pure [ ]
@@ -111,6 +114,7 @@ ld' params srcs out = cc1 opts srcs out
           { ccMode     = Link
           , ccWarnings = []
           , ccIncPaths = []
+          , ccDefines  = []
           }
 
 -- | Invoke the host-native GCC compiler. Mostly used for compiling the
