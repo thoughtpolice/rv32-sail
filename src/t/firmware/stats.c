@@ -27,8 +27,8 @@ static void stats_print_dec(unsigned int val, int digits, bool zero_pad)
 
 void stats(void)
 {
-	unsigned int num_cycles, num_instr;
-	__asm__ volatile ("rdcycle %0; rdinstret %1;" : "=r"(num_cycles), "=r"(num_instr));
+	unsigned int num_cycles = 0, num_instr = 0;
+	//__asm__ volatile ("rdcycle %0; rdinstret %1;" : "=r"(num_cycles), "=r"(num_instr));
 	print_str("Cycle counter ........");
 	stats_print_dec(num_cycles, 8, false);
 	print_str("\nInstruction counter ..");

@@ -7,17 +7,24 @@
 
 #include "firmware.h"
 
-#define OUTPORT 0x10000000
-
 void print_chr(char ch)
 {
-	*((volatile uint32_t*)OUTPORT) = ch;
+	__asm__ __volatile__(
+		"addi a0,zero,0;"
+		"add a1,zero,%0;"
+		"ecall;\n\t"
+	:	/* No outputs */
+	:	"g" (ch)
+	:	"a0", "a1"
+	);
 }
 
 void print_str(const char *p)
 {
-	while (*p != 0)
-		*((volatile uint32_t*)OUTPORT) = *(p++);
+	while (*p != 0) {
+		print_chr(*p);
+		p++;
+	}
 }
 
 void print_dec(unsigned int val)
@@ -29,13 +36,16 @@ void print_dec(unsigned int val)
 		val = val / 10;
 	}
 	while (p != buffer) {
-		*((volatile uint32_t*)OUTPORT) = '0' + *(--p);
+		char c = *(--p);
+		print_chr('0' + c);
 	}
 }
 
 void print_hex(unsigned int val, int digits)
 {
-	for (int i = (4*digits)-4; i >= 0; i -= 4)
-		*((volatile uint32_t*)OUTPORT) = "0123456789ABCDEF"[(val >> i) % 16];
+	for (int i = (4*digits)-4; i >= 0; i -= 4) {
+		char c = "0123456789ABCDEF"[(val >> i) % 16];
+		print_chr(c);
+	}
 }
 

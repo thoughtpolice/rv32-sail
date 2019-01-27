@@ -5,22 +5,13 @@
 // binary, for any purpose, commercial or non-commercial, and by any
 // means.
 
-#ifndef FIRMWARE_H
-#define FIRMWARE_H
+#include "firmware.h"
 
-#include <stdint.h>
-#include <stdbool.h>
-
-// print.c
-void print_chr(char ch);
-void print_str(const char *p);
-void print_dec(unsigned int val);
-void print_hex(unsigned int val, int digits);
-
-// sieve.c
-void sieve(void);
-
-// stats.c
-void stats(void);
-
-#endif
+int main(int ac, char** av)
+{
+	(void)ac, (void)av;
+	//sieve();
+	stats();
+	
+	return 42;
+}
