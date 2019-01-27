@@ -113,18 +113,6 @@ ld' params srcs out = cc1 opts srcs out
           , ccIncPaths = []
           }
 
-cc1' :: [ String ] -> String -> FilePath -> [ FilePath ] -> [ String ] -> Action ()
-cc1' mode arch out src extra = do
-  need src
-  cmd ("riscv32-unknown-elf-gcc -march=" <> arch)
-    [ "-Os", "-pedantic", "-std=c11" ]
-    [ "-Werror", "-Wall", "-Wextra", "-Wshadow", "-Wundef"
-    , "-Wpointer-arith", "-Wcast-qual", "-Wcast-align", "-Wwrite-strings"
-    , "-Wredundant-decls", "-Wstrict-prototypes", "-Wmissing-prototypes"
-    ]
-    [ "-ffreestanding", "-nostdlib" ]
-    mode [ "-o", out ] src extra
-
 -- | Invoke the host-native GCC compiler. Mostly used for compiling the
 -- sequential emulator.
 gcc
