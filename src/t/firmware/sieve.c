@@ -54,6 +54,7 @@ static void print_prime(int idx, int val)
 
 void sieve(void)
 {
+	print_str("\nSieve test:\n");
 	int idx = 1;
 	hash = 5381;
 	print_prime(idx++, 2);

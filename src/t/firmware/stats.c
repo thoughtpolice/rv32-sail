@@ -28,12 +28,15 @@ static void stats_print_dec(unsigned int val, int digits, bool zero_pad)
 void stats(void)
 {
 	unsigned int num_cycles = 0, num_instr = 0;
+
+	print_str("\nCPU stats:\n");
+
 	//__asm__ volatile ("rdcycle %0; rdinstret %1;" : "=r"(num_cycles), "=r"(num_instr));
-	print_str("Cycle counter ........");
+	print_str("  Cycle counter ........");
 	stats_print_dec(num_cycles, 8, false);
-	print_str("\nInstruction counter ..");
+	print_str("\n  Instruction counter ..");
 	stats_print_dec(num_instr, 8, false);
-	print_str("\nCPI: ");
+	print_str("\n  CPI: ");
 	stats_print_dec((num_cycles / num_instr), 0, false);
 	print_str(".");
 	stats_print_dec(((100 * num_cycles) / num_instr) % 100, 2, true);

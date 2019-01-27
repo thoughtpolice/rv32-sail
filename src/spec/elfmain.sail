@@ -203,7 +203,7 @@ function main() = {
     EImpossible(i)       => { prerr_ln("[Sail] IMPOSSIBLE ERROR (GHOSTS IN THE SHELL): " ^ i) }
   };
 
-  print_ln("\n[Sail] Finished!");
+  print_ln("[Sail] Finished!");
   print_regs();
   print_stats(start_time);
 }
