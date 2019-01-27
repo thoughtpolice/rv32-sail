@@ -17,9 +17,9 @@ main:
 	.global n ## _ret; 		\
 	n ## _ret:
 
-	NO_TEST(lui)
-	NO_TEST(auipc)
-	NO_TEST(j)
+	TEST(lui)
+	TEST(auipc)
+	TEST(j)
 	NO_TEST(jal)
 	NO_TEST(jalr)
 
@@ -40,14 +40,14 @@ main:
 	NO_TEST(sh)
 	NO_TEST(sw)
 
-	NO_TEST(addi)
-	NO_TEST(slti) // also tests sltiu
-	NO_TEST(xori)
-	NO_TEST(ori)
-	NO_TEST(andi)
-	NO_TEST(slli)
-	NO_TEST(srli)
-	NO_TEST(srai)
+	TEST(addi)
+	TEST(slti) // also tests sltiu
+	TEST(xori)
+	TEST(ori)
+	TEST(andi)
+	TEST(slli)
+	TEST(srli)
+	TEST(srai)
 
 	NO_TEST(add)
 	NO_TEST(sub)
@@ -69,7 +69,7 @@ main:
 	NO_TEST(rem)
 	NO_TEST(remu)
 
-	NO_TEST(simple)
+	TEST(simple)
 
 	/* body, part 2: sieve and stat output */
 	jal ra, sieve
