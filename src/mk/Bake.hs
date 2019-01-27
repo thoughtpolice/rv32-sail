@@ -104,7 +104,7 @@ rvld arch out srcs = need [ lds ] >> libfirmObjs >>= \f -> ld (srcs ++ f) out
     ld = ld' defaultCcParams
       { ccChoice = GCC, ccPrefix = HostPrefix "riscv32-unknown-elf-"
       , ccMarch  = Just arch
-      , ccFreestanding = True
+      , ccFreestanding = True, ccLibs = [ "gcc" ]
       , ccLdFlags = [ "-Bstatic", "-T", lds, "-Map", ldm, "--strip-debug" ]
       }
 
