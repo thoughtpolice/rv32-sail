@@ -10,7 +10,7 @@
 int main(int ac, char** av)
 {
 	(void)ac, (void)av;
-	//sieve();
+	sieve();
 	stats();
 	
 	return 42;
