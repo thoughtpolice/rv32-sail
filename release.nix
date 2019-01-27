@@ -8,7 +8,7 @@
 , ghc ? "ghc863"
 
   # Set the RISC-V subarchitecture for the GCC toolchain
-, riscv-arch ? "rv32imc"
+, riscv-arch ? "rv32i"
 
   # Nixpkgs import path, can be set to e.g. '<nixpkgs>'
   # The default value, null, uses a pre-determined snapshot of the nixpkgs
