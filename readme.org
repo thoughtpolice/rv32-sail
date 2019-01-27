@@ -2,46 +2,67 @@
 
 [[https://img.shields.io/badge/version-0.0pre-orange.svg]] [[https://img.shields.io/badge/license-MIT-blue.svg]]
 
-[[https://risc-v.org][RISC-V]] software emulator for the RV32-IMAC core, written in [[https://www.cl.cam.ac.uk/~pes20/sail/][Sail]] and compiled to
-a static emulator executable, using [[https://nixos.org/nix][Nix]]. It also includes a bunch of tools for
-doing bare-metal RISC-V software on top of the simulator easily.
+~rv32-sail~ is a software emulator for a small computer that uses the [[https://risc-v.org][RISC-V]]
+instruction set. While other system emulators (such as [[https://www.qemu.org][QEMU]], or [[https://github.com/rems-project/sail-riscv][sail-riscv]]) are
+designed to boot systems like Linux or [[https://sel4.systems][seL4]], ~rv32-sail~ is more modest: it
+currently is designed to emulate something closer to an advanced
+microcontroller. (Think of it as an emulator for a system like the [[https://www.sifive.com/boards/hifive1][HiFive1]] --
+not the [[https://www.sifive.com/boards/hifive-unleashed][HiFive Unleashed]].)
+
+~rv32-sail~ does not just come with the emulator: it also comes with a handy
+toolkit and environment containing a GCC cross compiler, the emulator, as well
+as a robust build system and test suite. If you want to try RISC-V assembly
+programming, write your own simple "bare metal" programs, or extend the RISC-V
+instruction set, this might be for you!
 
 #+BEGIN_QUOTE
 *NOTE*: rv32-sail ships a RISC-V *software emulator*, which is an approximate
 representation of the CPU as a sequential software program. It is not
 "cycle-accurate" and can not model clocks, digital logic, power or area
-consumption of a physical RISC-V CPU in any way!
+consumption of a physical RISC-V CPU in any way! If you want to the Verilog
+equivalent of ~rv32-sail~, try [[https://github.com/cliffordwolf/picorv32][picorv32]]!
 #+END_QUOTE
 
 * Features
 
 - High-level RISC-V ISA emulator, written in Sail
   - Clean code is paramount with lots of comments.
-  - High-level, type-safe functional-imperative description of RV32.
-  - High-level code compiled to optimized C for an executable emulator.
-    - There's also a reference emulator with the OCaml backend, too.
-  - The Sail instruction decoder is automatically generated from an
+  - High-level, type-safe, functional-imperative description of RISC-V.
+  - Compiled to C for an executable emulator.
+  - The RISC-V instruction decoder is automatically generated from an
     even higher-level spec describing the decoding layout for each
-    instruction.
+    instruction, written in Haskell.
+- Robust build system, toolchain, programming environment.
+  - Global dependencies (GCC, Haskell, Sail) are provided with *[[https://nixos.org/nix][Nix]]*,
+    so every dependency is taken care of for you, *on almost any Linux
+    distribution*. Embedded programming toolchain nightmares are over,
+    and you never fiddle with prerequisites -- and you can delete
+    everything in an instant when you're done.
+  - The build system is written in Haskell, using [[https://shakebuild.com][Shake]] -- it's fast
+    and highly accurate, meaning you will (hopefully) never get out of
+    date builds, broken builds, or build failures due to invalid
+    dependency tracking.
+  - Designed to be used incrementally and easy for contributors. Most of
+    the Nix complexity is completely hidden, and the build system is
+    easy as pie to use -- like a normal shell script.
+- Included toolchain for C programming
+  - GCC 8.x with the RISC-V backend is the primary C toolchain.
+  - A firmware shim library called ~libfirm~ provides the basics needed
+    for setting up the environment -- initial stack allocation and calling
+    your ~main~ function, etc.
+  - Includes a very minimal ~libc~ that provides some of the core fundamentals
+    for C programming, including basic standard headers, library functions etc.
+  - Loads raw ELF binaries that can be booted and executed directly.
 - Included demo code
   - Full test firmware based on [[https://github.com/cliffordwolf/picorv32][picorv32]] firmware for end-to-end testing.
-- Robust build system and toolchain
-  - Uses Nix, so every dependency is taken care of for you.
-  - Robust build system written in [[https://shakebuild.com][Shake]] that's fast and highly accurate.
-  - Designed to be used incrementally and easy for contributors.
-- Included toolchain
-  - Loads raw ELF binaries that can be booted and executed directly.
-  - You can probably write /your own/ ELF binary!
 
 Note that ~rv32-sail~ is *not* designed to be packaged for Linux distributions,
 or used like -- or as an alternative to -- a real emulator such as QEMU. It is
 quite slow, and it is designed for correctness and as the basis for software
-stack development, with design flexibility in the simulator: it is much easier
-to write software than write RTL code (such as picorv32), and it is easier still
-to write Sail than hack on QEMU.
+stack development, with design flexibility in the simulator.
 
 The end goal of this project is to implement a full, robust emulator for an
-embedded RV32-based CPU with [[https://www.cl.cam.ac.uk/research/security/ctsrd/cheri/][CHERI extensions]], based on the paper /[[_][CheriRTOS: A
+embedded RISC-V CPU with [[https://www.cl.cam.ac.uk/research/security/ctsrd/cheri/][CHERI extensions]], based on the paper /[[_][CheriRTOS: A
 Capability Model for Embedded Devices]]/, as well as an accompanying
 capability-first RTOS. (If we want to stir up our wild imaginations, such a
 device could be a pure open hardware/FOSS replacement for devices like the
@@ -53,7 +74,10 @@ ESP32.)
 - [[#building][Building]]
 - [[#usage][Usage]]
   - [[#running-the-test-firmware][Running the Test Firmware]]
+  - [[#emulator-configuration-options][Emulator configuration options]]
+  - [[#cleaning-up][Cleaning up]]
 - [[#softwarefirmware-development][Software/Firmware Development]]
+- [[#emulator-runtime-configuration-reference][Emulator runtime configuration reference]]
 - [[#hacking-the-core][Hacking the core]]
   - [[#basic-high-level-overview][Basic high level overview]]
   - [[#source-code-layout][Source code layout]]
@@ -73,7 +97,8 @@ ESP32.)
 *NOTE*: You must have [[https://nixos.org/nix][the Nix Package Manager]] installed in order to build the
 emulator! While you can install Sail and the dependencies yourself, this is the
 main development method and baseline system for reproducing issues, where tests
-are written, etc.
+are written, etc. Should you ignore this, I cannot help you, and you should not
+be surprised if things don't work!
 
 If you are capable of executing ~sudo~ on your machine, then you can do a quick
 installation easily from your shell:
@@ -81,6 +106,10 @@ installation easily from your shell:
 #+BEGIN_SRC bash
 $ sh <(https://nixos.org/nix/install) --daemon
 #+END_SRC
+
+Please read the shell script. All it does is download a tarball and execute an
+actual installation script inside, and you can find [[https://github.com/NixOS/nix/tree/master/scripts][the source code for those
+scripts]] as well.
 
 This should work on any modern Linux distribution with namespace support and
 systemd as the init system. Then you can log back into your user account --
@@ -102,10 +131,10 @@ $ cd rv32-sail/
 $ ./bake.hs -j
 #+END_SRC
 
-This will take some time to build the GCC cross compiler for bare-metal RISC-V,
-as well as the Sail toolchain. Afterwords, it will compile the emulator as well
-as some example firmware you can use. All of the build artifacts will be
-available under the ~./build/~ directory.
+This will take some time to build the GCC cross compiler for RISC-V, as well as
+the Sail toolchain. Afterwords, it will compile the emulator as well as some
+example firmware you can use. All of the build artifacts will be available under
+the ~./build/~ directory.
 
 If you want to control or invoke the underlying Sail toolchain directly (for
 example, to pass different options, or examine the build environment), simply
@@ -121,27 +150,83 @@ $ nix-shell
 ...
 #+END_SRC
 
+Once you're inside ~nix-shell~, you can also run the ~bake~ command, which is a
+simple wrapper to run the ~bake.hs~ script, with all the same arguments:
+
+#+BEGIN_SRC
+[nix-shell:~/sail-riscv32]$ bake -j
+Build completed in 0.01s
+#+END_SRC
+
+The main difference between running ~bake~ inside ~nix-shell~ or running
+~bake.hs~ directly is one of speed: the ~bake.hs~ script uses a "shell
+scripting" feature of Nix, which means invoking the script causes Nix to run. It
+takes a second or two to set up the build environment, and then run the script,
+every time you invoke it. (Despite the slowdown, the advantage of running
+~bake.hs~ directly without ~nix-shell~ is that it essentially makes the build
+system completely transparent to the user.)
+
+In contrast, running ~bake~ inside the ~nix-shell~ just runs the script
+directly, since the build environment is already available, and this means it
+"starts up" faster.
+
+For iterative development, you may find having an extra terminal or tmux window
+where you run ~bake~ quite useful!
+
 * Usage
 
-Once you've built the emulator and test/demo firmware, it will be available
-under the ~./build~ directory.
+Once you've built the emulator and test/demo firmware, all of those artifacts
+will be available under the ~./build~ directory.
 
 ** Running the Test Firmware
 
-The self-testing firmware is available under ~./build/selftest.elf~, and can be
-loaded immediately. At the end, the emulator will spit out some runtime
-statistics:
+The self-testing firmware is available under ~./build/t/firmware.elf~, and can
+be loaded immediately. At the end, the emulator will spit out some runtime
+statistics, as well as a register dump:
 
 #+BEGIN_SRC
-./bake.hs -j
-./build/cruise.opt -e build/selftest.elf
+./build/cruise.opt -e build/t/firmware.elf
+[Sail] Allocating new block 0x0
+[Sail] ELF Initial PC: 0x0
+[Sail] Executing reset vector...
+
 ...
 
+[Sail] Trap (EBREAK) encountered - exiting
+
 [Sail] Finished!
+[Sail] Register dump:
+x0:	0x00000000 ra:	0x000000A0 sp:	0x00010000 gp:	0xDEADBEEF
+tp:	0xDEADBEEF t0:	0x0000018C t1:	0x0000002A t2:	0x00000000
+fp:	0x00000000 s1:	0x00000000 a0:	0x0000002A a1:	0x0000000A
+a2:	0x00000005 a3:	0x00000000 a4:	0x00000030 a5:	0x0000000A
+a6:	0x00000000 a7:	0x00000000 s2:	0x00000000 s3:	0x00000000
+s4:	0x00000000 s5:	0x00000000 s6:	0x00000000 s7:	0x00000000
+s8:	0x00000000 s9:	0x00000000 s10:	0x00000000 s11:	0x00000000
+t3:	0x00000000 t4:	0x00000000 t5:	0x00000000 t6:	0x00000000
+
 [Sail] Executed Instructions: ...
 [Sail] Nanoseconds Elapsed:   ...
 [Sail] Approximate IPS:       ...
 #+END_SRC
+
+** Emulator configuration options
+
+The emulator has several configuration options which can be set at runtime
+in order to control various aspects of the machine's behavior. Notably, this
+includes things like disabling certain instruction set features, etc.
+
+To get the list of options, invoke the ~cruise.opt~ executable with the
+arguments ~-C help~:
+
+#+BEGIN_SRC
+./build/cruise.opt -C help
+#+END_SRC
+
+** Cleaning up
+
+You can completely delete this directory later at any time if you want to clean
+things up, or run ~./bake.hs clean~ to have it done for you.
 
 * Software/Firmware Development
 
@@ -151,6 +236,11 @@ eget, convallis nec, purus. Cum sociis natoque penatibus et magnis dis
 parturient montes, nascetur ridiculus mus. Nulla posuere. Donec vitae dolor.
 Nullam tristique diam non turpis. Cras placerat accumsan nulla. Nullam rutrum.
 Nam vestibulum accumsan nisl.
+
+* Emulator runtime configuration reference
+
+Not Invented Here. In the future this will describe the semantics and use of the
+various ~-C~ options for the emulator.
 
 * Hacking the core
 
@@ -173,18 +263,20 @@ Finally there is the Nix build infrastructure. See below for more on that.
 
 ** Build system shenanigans
 
-The build system is written in Shake, so it's suggested you [[https://shakebuild.com/manual][read the manual]] to
-understand how it works.
+The build system is written in Haskell, using the [[https://shakebuild.com][Shake]] library, which is an API
+for expressing and designing build systems -- so it's suggested you [[https://shakebuild.com/manual][read the
+manual]] to understand how it works.
 
 The core TL;DR is that Shake is a "dynamic" build system unlike Make: rather
 than declaring dependencies statically along with a target, you declare a target
 and can run arbitrary code, /then/ declare dependencies. Dependencies can be
-arbitrary values, and Shake has very precise dependency tracking with an array
-of built-in utilities: support for tracking file contents, environment
-variables, tool output, etc.
+arbitrary values, not just files, and Shake has very precise dependency tracking
+with an array of built-in utilities: support for tracking file contents,
+environment variables, tool output, etc.
 
 The end result of these features is that the project-level build system is
-nearly magical and very robust and fast to respond to all changes.
+nearly magical and very robust, tracks changes to source code and build tools
+extremely accurately, is fast to respond to all changes, and easy to use.
 
 Currently, there is a startup penalty paid for running the build system under
 ~nix-shell~. This will probably be rectified in the future, ideally by
