@@ -107,6 +107,7 @@ overload MEM = { __RISCV_read, __RISCV_write }
 union exception = {
   EInvalidInstrBase : bits(32),
   EInvalidInstrComp : bits(16),
+  EMisalignedPC     : bits(32),
   EFeatureDisabled  : string,
   ENotImplemented   : string,
   EInvalidECall     : xlen_t,

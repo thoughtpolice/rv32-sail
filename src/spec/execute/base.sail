@@ -17,8 +17,8 @@ function clause execute AUIPC(imm, rd) = { X(rd) = exts(imm @ 0x000) + PC }
 
 function clause execute JAL(imm, rd) = {
   let npc : xlen_t = exts(imm) + PC;
+  assert_aligned_pc(npc);
 
-  // TODO FIXME: handle misaligned npc
   X(rd) = NextPC;
   NextPC = npc;
 }
@@ -26,8 +26,8 @@ function clause execute JAL(imm, rd) = {
 function clause execute JALR(imm, rs1, rd) = {
   let npc0 : xlen_t = exts(imm) + X(rs1);
   let npc  : xlen_t = npc0[31..1] @ 0b0;
+  assert_aligned_pc(npc);
 
-  // TODO FIXME: handle misaligned npc
   X(rd) = NextPC;
   NextPC = npc;
 }
@@ -35,6 +35,7 @@ function clause execute JALR(imm, rs1, rd) = {
 function clause execute BEQ(imm, rs2, rs1) = {
   let off : xlen_t = exts(sb_imm(imm) : imm13);
   let npc : xlen_t = PC + off;
+  assert_aligned_pc(npc);
 
   if (X(rs1) == X(rs2)) then {
     NextPC = npc;
@@ -44,6 +45,7 @@ function clause execute BEQ(imm, rs2, rs1) = {
 function clause execute BNE(imm, rs2, rs1) = {
   let off : xlen_t = exts(sb_imm(imm) : imm13);
   let npc : xlen_t = PC + off;
+  assert_aligned_pc(npc);
 
   if (not_bool(X(rs1) == X(rs2))) then {
     NextPC = npc;
@@ -53,6 +55,7 @@ function clause execute BNE(imm, rs2, rs1) = {
 function clause execute BLT(imm, rs2, rs1) = {
   let off : xlen_t = exts(sb_imm(imm) : imm13);
   let npc : xlen_t = PC + off;
+  assert_aligned_pc(npc);
 
   if (signed(X(rs1)) < signed(X(rs2))) then {
     NextPC = npc;
@@ -62,6 +65,7 @@ function clause execute BLT(imm, rs2, rs1) = {
 function clause execute BGE(imm, rs2, rs1) = {
   let off : xlen_t = exts(sb_imm(imm) : imm13);
   let npc : xlen_t = PC + off;
+  assert_aligned_pc(npc);
 
   if (signed(X(rs1)) >= signed(X(rs2))) then {
     NextPC = npc;
@@ -71,6 +75,7 @@ function clause execute BGE(imm, rs2, rs1) = {
 function clause execute BLTU(imm, rs2, rs1) = {
   let off : xlen_t = exts(sb_imm(imm) : imm13);
   let npc : xlen_t = PC + off;
+  assert_aligned_pc(npc);
 
   if (unsigned(X(rs1)) < unsigned(X(rs2))) then {
     NextPC = npc;
@@ -80,6 +85,7 @@ function clause execute BLTU(imm, rs2, rs1) = {
 function clause execute BGEU(imm, rs2, rs1) = {
   let off : xlen_t = exts(sb_imm(imm) : imm13);
   let npc : xlen_t = PC + off;
+  assert_aligned_pc(npc);
 
   if (unsigned(X(rs1)) >= unsigned(X(rs2))) then {
     NextPC = npc;

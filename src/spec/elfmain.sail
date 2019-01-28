@@ -200,6 +200,7 @@ function main() = {
     EInvalidInstrComp(c) => { prerr_ln("[Sail] ERROR: Invalid instruction (compressed encoding) found: " ^ bits_str(c)) },
     EFeatureDisabled(f)  => { prerr_ln("[Sail] ERROR: Feature Disabled - '" ^ f ^ "'") },
     ENotImplemented(f)   => { prerr_ln("[Sail] ERROR: Not Invented Here - '" ^ f ^ "'") },
+    EMisalignedPC(npc)   => { prerr_ln("[Sail] ERROR: Misaligned PC encountered during fetch - '" ^ bits_str(npc) ^ "'") },
     EInvalidECall(a0)    => { prerr_ln("[Sail] ERROR: Invalid ECall operation - a0=" ^ bits_str(a0)) },
     EImpossible(i)       => { prerr_ln("[Sail] IMPOSSIBLE ERROR (GHOSTS IN THE SHELL): " ^ i) }
   };

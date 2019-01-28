@@ -23,5 +23,25 @@ function __rv32_load (imm, rs1, width) = {
   MEM(ptr, width)
 }
 
+/*
+** assert that a given target PC address has proper alignment
+*/
+val assert_aligned_pc : xlen_t -> unit effect { escape }
+function assert_aligned_pc pc = {
+  // NOTE: the RISC-V ISA Manual, V2.2, pg 16, "Control Transfer Instructions"
+  // says:
+  //
+  //     "Instruction fetch misaligned exceptions are not possible on machines
+  //      that support extensions with 16-bit aligned instructions, such as the
+  //      compressed instruction set extension, C."
+
+  if not_bool(__cfg_enableExtensionC) then {
+    // check for 4 byte alignment
+    if not_bool(pc[1..0] == 0b00) then {
+      throw(EMisalignedPC(pc))
+    }
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /* -- El Fin (execute/prologue.sail) ---------------------------------------- */
