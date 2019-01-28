@@ -1,11 +1,31 @@
 	.section text
 	.global main
 
+.intro_text:
+	.ascii "\nRUNNING RISC-V TESTS\n\n"
+	.byte 0x00
+	.balign 4, 0
+.finished_text:
+	.ascii "\nFINISHED RISC-V TESTS\n"
+	.byte 0x00
+	.balign 4, 0
+
 main:
 	addi sp, sp, -4
 	sw ra, 4(sp) /* ra = caller save */
 
 	/* body, part 1: risc-v tests */
+
+	addi a0,zero,0
+	lui  a2,%hi(.intro_text)
+	addi a2,a2,%lo(.intro_text)
+.1:
+	lb    a1,0(a2)
+	beq   a1,zero,.2
+	ecall
+	addi  a2,a2,1
+	jal   zero,.1
+.2:
 
 #define TEST(n)				\
 	.global n;			\
@@ -70,6 +90,17 @@ main:
 	NO_TEST(remu)
 
 	TEST(simple)
+
+	addi a0,zero,0
+	lui  a2,%hi(.finished_text)
+	addi a2,a2,%lo(.finished_text)
+.3:
+	lb    a1,0(a2)
+	beq   a1,zero,.4
+	ecall
+	addi  a2,a2,1
+	jal   zero,.3
+.4:
 
 	/* body, part 2: sieve and stat output */
 	jal ra, sieve
