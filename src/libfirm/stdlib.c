@@ -5,8 +5,7 @@ void abort(void) {
 }
 
 void exit(int status) {
-  //  TODO FIXME
-  (void)status;
-  __asm__ __volatile__("1: j 1b");
+  (void)status; //  TODO FIXME: propagate status
+  __asm__ __volatile__("ebreak; 1: j 1b");
   __builtin_unreachable();
 }
