@@ -18,7 +18,8 @@ union FetchResult = {
   FetchError        : (exception, xlen_t)
 }
 
-/* Non-compressed instructions have low-half LSBs of 0x00 */
+/* Non-compressed instructions all have low-half LSBs of 0b11; compressed
+** instructions use 0b00, 0b01, or 0b11 */
 function isCompressed(h : xhalf_t) -> bool = not_bool(h[1..0] == 0b11)
 
 /*
