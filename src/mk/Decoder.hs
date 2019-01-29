@@ -235,7 +235,7 @@ genPrintInsnHead (fixupName -> nam) ty = caseHacks <> "function clause print_ins
       "ADDI"  -> "function clause print_insn ADDI(0b000000000000, 0b00000, 0b00000) = \"nop\"\n"
               <> "function clause print_insn ADDI(imm, 0b00000, rd) = \"li \" ^ rd ^ \", \" ^ bits_str(imm)\n"
               <> "function clause print_insn ADDI(0b000000000000, rs1, rd) = \"mv \" ^ rd ^ \", \" ^ rs1 \n"
-      "JAL"   -> "function clause print_insn JAL(imm, 0b00000) = \"j 0x\" ^ hex_bits_21(imm)\n"
+      "JAL"   -> "function clause print_insn JAL(imm, 0b00000) = \"j \" ^ bits_str(extz(imm) : bits(32))\n"
       "JALR"  -> "function clause print_insn JALR(0b000000000000, 0b00001, 0b00000) = \"ret\"\n"
       "SLTIU" -> "function clause print_insn SLTIU(0b000000000001, rs, rd) = \"seqz \" ^ rd ^ \", \" ^ rs \n"
       "SLTU"  -> "function clause print_insn SLTU(rs, 0b00000, rd) = \"snez \" ^ rd ^ \", \" ^ rs \n"
@@ -254,7 +254,7 @@ genPrintInsnBody (lowerName -> nam) ty = start <> " ^ " <> body
       STy _ _     -> (quote nam, commafy [ "rs2", "bits_str(append(imm1,imm0)) ^ " <> parenfiy "rs1" ])
 
       UTy _       -> (quote nam, commafy [ "rd", "bits_str(imm)" ])
-      JTy _       -> (quote nam, commafy [ "rd", "hex_bits_21(imm)" ])
+      JTy _       -> (quote nam, commafy [ "rd", "bits_str(extz(imm) : bits(32))" ])
 
       -- TODO FIXME
       R4Ty _ _    -> (quote nam, commafy [ "rd", "rs1", "rs2", "rs3" ])
