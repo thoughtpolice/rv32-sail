@@ -6,6 +6,14 @@
 /* -------------------------------------------------------------------------- */
 /* -- Close scattered defs -------------------------------------------------- */
 
+function clause execute i = {
+  let rep : bits(32) = encode_base(i);
+  let msg = "Unimplemented instruction encountered: '" ^ bits_str(rep) ^ "'"
+          ^ ", AKA '" ^ print_insn(i) ^ "'";
+
+  throw (ENotImplemented(msg))
+}
+
 end execute
 
 /* -------------------------------------------------------------------------- */
