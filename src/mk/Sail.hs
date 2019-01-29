@@ -104,6 +104,5 @@ sailSimRules SailBackendC bin srcs = do
   -- compile Sail -> C code
   csrc %> \out -> need srcs >> sailc out srcs
 
--- TODO FIXME: OCaml backend
 sailSimRules SailBackendOCaml bin srcs = do
   bin %> \out -> need srcs >> sailcaml out srcs
