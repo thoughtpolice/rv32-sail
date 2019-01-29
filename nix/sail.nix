@@ -76,12 +76,12 @@ let
         --replace 'cp -r' 'cp -rf'
     '';
 
-    # Most of the Sail models allow SAIL_DIR to be set to a location
-    # containing a sail installation, but it expects the layout in the source
-    # code repo, not the installed binary layout. But this is easy to fix:
-    # in particular, it expects the sail binary to be next to the ./share
-    # directory pointed to by SAIL_DIR. Fake it with a symlink to make things
-    # easy and avoid the need for opam for model builds.
+    # Most of the Sail models allow SAIL_DIR to be set to a location containing
+    # a sail installation, but it expects the layout in the source code repo,
+    # not the installed binary layout. But this is easy to fix: in particular,
+    # it expects the sail binary to be next to the ./share directory pointed to
+    # by SAIL_DIR. Fake it with a symlink to make things easy and avoid the need
+    # for opam for model builds.
     postInstall = ''
       ln -sfv $out/bin/sail $out/share/sail
     '';
