@@ -44,21 +44,20 @@ let
   # Sail architectural definition language
   sail = ocamlPackages.buildOcaml rec {
     name = "sail";
-    version = with builtins; "0.7pre_${substring 0 7 src.rev}";
+    version = with builtins; "0.8pre_${substring 0 7 src.rev}";
 
     src = pkgs.fetchFromGitHub {
       owner  = "rems-project";
       repo   = "${name}";
-      rev    = "a5e2b3b7411f630b6d2337402330e13862b5666a";
-      sha256 = "1l67dadxr09yiphvj4y2a060rmh64bpnq74r1g82qi0skhbgg9vf";
+      rev    = "60164a9a221ed6566f1067100dbea2ec828b47d2";
+      sha256 = "0k0j7ds09ajf6j4af3y7nm5hmhz8067a2h27cfkkl2qjjwldhzc3";
     };
 
-    # SAIL_DIR is used by some associated CPU models to find the share
-    # directory containing the standard library and extra code. The
-    # alternative is to use opam, but we don't do that here (to make
-    # it easier to build models.) In the future we might. For now,
-    # export SAIL_DIR for any dependent expressions so they can find
-    # things.
+    # SAIL_DIR is used by some associated CPU models to find the share directory
+    # containing the standard library and extra code. The alternative is to use
+    # opam, but we don't do that here (to make it easier to build models.) In
+    # the future we might. For now, export SAIL_DIR for any dependent
+    # expressions so they can find things.
     setupHook = pkgs.writeText "lemlib-hook.sh" ''
       export SAIL_DIR=@out@/share
     '';
