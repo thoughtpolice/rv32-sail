@@ -168,13 +168,60 @@ function clause execute FENCE_I() = { nih("FENCE.I") }
 // -------------------------------------
 // ---- CSRs
 
-function clause execute CSRRW(csr, rs1, rd) = { nih("CSRRW") }
-function clause execute CSRRS(csr, rs1, rd) = { nih("CSRRS") }
-function clause execute CSRRC(csr, rs1, rd) = { nih("CSRRC") }
+function clause execute CSRRW(csr, rs1, rd) = {
+  if ~(rd == 0b00000) then {
+    let old : xlen_t = CSR(csr);
+    X(rd) = extz(old);
+  };
 
-function clause execute CSRRWI(csr, zimm, rd) = { nih("CSRRWI") }
-function clause execute CSRRSI(csr, zimm, rd) = { nih("CSRRSI") }
-function clause execute CSRRCI(csr, zimm, rd) = { nih("CSRRCI") }
+  CSR(csr) = X(rs1);
+}
+
+function clause execute CSRRS(csr, rs1, rd) = {
+  let old : xlen_t = CSR(csr);
+  X(rd) = extz(old);
+
+  if ~(rs1 == 0b00000) then {
+    CSR(csr) = X(rs1) & old;
+  }
+}
+
+function clause execute CSRRC(csr, rs1, rd) = {
+  let old : xlen_t = CSR(csr);
+  X(rd) = extz(old);
+
+  if ~(rs1 == 0b00000) then {
+    CSR(csr) = X(rs1) & ~(old);
+  }
+}
+
+function clause execute CSRRWI(csr, imm, rd) = {
+  if (not_bool(rd == 0b00000)) then {
+    let old : xlen_t = CSR(csr);
+    X(rd) = extz(old);
+  };
+
+  CSR(csr) = extz(imm);
+}
+
+function clause execute CSRRSI(csr, imm, rd) = {
+  let old : xlen_t = CSR(csr);
+  X(rd) = extz(old);
+
+  if ~(imm == 0b00000) then {
+    CSR(csr) = extz(imm) & old;
+  }
+}
+
+function clause execute CSRRCI(csr, imm, rd) = {
+  let old : xlen_t = CSR(csr);
+  X(rd) = extz(old);
+
+  if ~(imm == 0b00000) then {
+    CSR(csr) = extz(imm) & ~(old);
+  }
+}
+
 
 /* -------------------------------------------------------------------------- */
 /* -- El Fin (execute/base.sail) -------------------------------------------- */
