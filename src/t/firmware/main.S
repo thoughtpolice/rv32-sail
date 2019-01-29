@@ -16,9 +16,9 @@ main:
 
 	/* nb: tests don't go by the normal ABI, so x1-x6 get used,
 	** even though e.g. sp is callee save. unbreak that. */
-	mv x27, gp
-	mv t5, tp
-	mv t6, sp
+	mv s4, gp
+	mv s5, tp
+	mv s6, sp
 
 	/* body, part 1: risc-v tests */
 
@@ -47,7 +47,7 @@ main:
 	TEST(auipc)
 	TEST(j)
 	TEST(jal)
-	NO_TEST(jalr)
+	TEST(jalr)
 
 	TEST(beq)
 	TEST(bne)
@@ -109,9 +109,9 @@ main:
 .4:
 
 	/* NB: unclobber caller stack */
-	mv gp, x27
-	mv tp, t5
-	mv sp, t6
+	mv gp, s4
+	mv tp, s5
+	mv sp, s6
 
 	/* body, part 2: sieve and stat output */
 	jal ra, sieve
