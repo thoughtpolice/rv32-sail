@@ -12,6 +12,7 @@ module Bake
 -- Imports
 
 -- base
+import           Control.Monad ( liftM2 )
 import           Data.Maybe    ( fromMaybe )
 
 -- shake
@@ -99,9 +100,9 @@ rvcc arch defns out = cc src out
       }
 
 rvld :: String -> FilePath -> [FilePath] -> Action ()
-rvld arch out srcs = need [ lds ] >> libfirmObjs >>= \f -> ld (srcs ++ f) out
+rvld arch out srcs = need [ lds ] >> bootObjs >>= \f -> ld (srcs ++ f) out
   where
-    ( lds, ldm ) = ( "src/libfirm/sections.lds", out -<.> "map" )
+    ( lds, ldm ) = ( "src/boot/sections.lds", out -<.> "map" )
     ld = ld' defaultCcParams
       { ccChoice = GCC, ccPrefix = HostPrefix "riscv32-unknown-elf-"
       , ccMarch  = Just arch
@@ -118,11 +119,15 @@ ccObjsFromSources path = sourcesToObjects <$> getDirectoryFiles "" paths
         sourceToObject x = bdir (x <.> "o")
         sourcesToObjects = map sourceToObject
 
-libfirmObjs :: Action [FilePath]
-libfirmObjs = ccObjsFromSources "src/libfirm"
+bootObjs :: Action [FilePath]
+bootObjs = liftM2 (++)
+  (ccObjsFromSources "src/libfirm")
+  (ccObjsFromSources "src/boot")
 
-libfirmRules :: Rules ()
-libfirmRules = bdir "src/libfirm/*.o" %> rvcc "rv32i" []
+bootRules :: Rules ()
+bootRules = do
+  bdir "src/libfirm/*.o" %> rvcc "rv32i" []
+  bdir "src/boot/*.o"    %> rvcc "rv32i" []
 
 demoRules :: Rules ()
 demoRules = do
@@ -171,7 +176,7 @@ main = shakeArgsWith myShakeOptions myFlags $ \_ targets -> pure $ Just $ do
 
   -- major rule sets
   emulatorRules
-  libfirmRules
+  bootRules
   demoRules
   testRules
 
