@@ -61,7 +61,7 @@ val sub_vec_int = {c: "sub_bits_int",  _: "sub_vec_int"} : forall 'n. (bits('n),
 
 // -- ints, atoms, etc
 
-val pow2 = "pow2" : forall 'n. atom('n) -> atom(2 ^ 'n)
+val "pow2" : forall 'n. atom('n) -> atom(2 ^ 'n)
 val quot_round_zero = {ocaml: "quot_round_zero", lem: "hardware_quot", c: "tdiv_int"} : (int, int) -> int
 val rem_round_zero = {ocaml: "rem_round_zero", lem: "hardware_mod", c: "tmod_int"} : (int, int) -> int
 
