@@ -66,6 +66,16 @@ let
     buildPhase   = "make sail isail";
     installFlags = [ "INSTALL_DIR=$(out)" "SHARE_DIR=$(out)/share" ];
 
+    # The OCaml backend requires copying some files out of SAIL_DIR, but because
+    # these live in the Nix store, they have restrictive permissions that
+    # prevent naive copying, resulting in EPERM errors. Instead, replace the
+    # 'cp' clauses with 'cp -rf' so they're removed instead, making the output
+    # less chatty.
+    patchPhase = ''
+      substituteInPlace ./src/ocaml_backend.ml \
+        --replace 'cp -r' 'cp -rf'
+    '';
+
     # Most of the Sail models allow SAIL_DIR to be set to a location
     # containing a sail installation, but it expects the layout in the source
     # code repo, not the installed binary layout. But this is easy to fix:
