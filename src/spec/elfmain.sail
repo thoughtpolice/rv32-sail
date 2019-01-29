@@ -34,7 +34,7 @@ function elf_prefetch (pc) = {
 
   if isCompressed(ilo) then {
     if (not_bool(__cfg_enableExtensionC)) then {
-      FetchError(EFeatureDisabled("-C (compressed ISA) extension"), pc)
+      FetchError(ENotImplemented("-C (compressed ISA) extension"), pc)
     } else {
       FetchError(ENotImplemented("-C (compressed ISA) extension"), pc)
       // FetchedCompressed(ilo)
@@ -196,13 +196,13 @@ function main() = {
   try {
     while (churn ()) do { dump_info(verbose0, start_time) };
   } catch {
-    EInvalidInstrBase(w) => { prerr_ln("[Sail] ERROR: Invalid instruction (base encoding) found: " ^ bits_str(w)) },
-    EInvalidInstrComp(c) => { prerr_ln("[Sail] ERROR: Invalid instruction (compressed encoding) found: " ^ bits_str(c)) },
-    EFeatureDisabled(f)  => { prerr_ln("[Sail] ERROR: Feature Disabled - '" ^ f ^ "'") },
-    ENotImplemented(f)   => { prerr_ln("[Sail] ERROR: Not Invented Here - '" ^ f ^ "'") },
-    EMisalignedPC(npc)   => { prerr_ln("[Sail] ERROR: Misaligned PC encountered during fetch - '" ^ bits_str(npc) ^ "'") },
-    EInvalidECall(a0)    => { prerr_ln("[Sail] ERROR: Invalid ECall operation - a0=" ^ bits_str(a0)) },
-    EImpossible(i)       => { prerr_ln("[Sail] IMPOSSIBLE ERROR (GHOSTS IN THE SHELL): " ^ i) }
+    EInvalidInstrBase(w)  => { prerr_ln("[Sail] ERROR: Invalid instruction (base encoding) found: " ^ bits_str(w)) },
+    EInvalidInstrComp(c)  => { prerr_ln("[Sail] ERROR: Invalid instruction (compressed encoding) found: " ^ bits_str(c)) },
+    EFeatureDisabled(f,r) => { prerr_ln("[Sail] ERROR: Feature Disabled - '" ^ f ^ "' - " ^ r) },
+    ENotImplemented(f)    => { prerr_ln("[Sail] ERROR: Not Invented Here - '" ^ f ^ "'") },
+    EMisalignedPC(npc)    => { prerr_ln("[Sail] ERROR: Misaligned PC encountered during fetch - '" ^ bits_str(npc) ^ "'") },
+    EInvalidECall(a0)     => { prerr_ln("[Sail] ERROR: Invalid ECall operation - a0=" ^ bits_str(a0)) },
+    EImpossible(i)        => { prerr_ln("[Sail] IMPOSSIBLE ERROR (GHOSTS IN THE SHELL): " ^ i) }
   };
 
   print_ln("[Sail] Finished!");

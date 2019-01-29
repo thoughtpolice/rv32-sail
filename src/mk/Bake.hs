@@ -53,7 +53,7 @@ specSources mainFile
     decoder  = [ src "decode/prologue" ]
             <> map gen [ "decode/base" ]
             <> [ src "decode/epilogue" ]
-    execute  = map (srcDir "execute") [ "prologue", "base", "epilogue" ]
+    execute  = map (srcDir "execute") [ "prologue", "base", "ext-m", "epilogue" ]
     elfMain  = [ src "ecall", src (fromMaybe "elfmain" mainFile) ]
 
     -- source files which are hand-written (live under ./src)

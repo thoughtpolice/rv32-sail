@@ -108,7 +108,7 @@ union exception = {
   EInvalidInstrBase : bits(32),
   EInvalidInstrComp : bits(16),
   EMisalignedPC     : bits(32),
-  EFeatureDisabled  : string,
+  EFeatureDisabled  : (string,string),
   ENotImplemented   : string,
   EInvalidECall     : xlen_t,
   EImpossible       : string,
