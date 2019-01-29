@@ -9,7 +9,7 @@
 register configuration __cfg_disassembleOps : bool = false
 register configuration __cfg_dumpStatsCycleRate : int = 10000000
 
-register configuration __cfg_enableExtensionM : bool = false
+register configuration __cfg_enableExtensionM : bool = true
 register configuration __cfg_enableExtensionA : bool = false
 register configuration __cfg_enableExtensionF : bool = false
 register configuration __cfg_enableExtensionD : bool = false

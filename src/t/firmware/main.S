@@ -85,15 +85,15 @@ main:
 	TEST(or)
 	TEST(and)
 
-	NO_TEST(mulh)
-	NO_TEST(mulhsu)
-	NO_TEST(mulhu)
-	NO_TEST(mul)
+	TEST(mulh)
+	TEST(mulhsu)
+	TEST(mulhu)
+	TEST(mul)
 
-	NO_TEST(div)
-	NO_TEST(divu)
-	NO_TEST(rem)
-	NO_TEST(remu)
+	TEST(div)
+	TEST(divu)
+	TEST(rem)
+	TEST(remu)
 
 	TEST(simple)
 
