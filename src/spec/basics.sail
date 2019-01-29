@@ -6,6 +6,7 @@
 /* -------------------------------------------------------------------------- */
 /* -- Basic Types ----------------------------------------------------------- */
 
+let xlen = 32
 type xlen_t = bits(32)
 
 type xword_t = bits(32)
@@ -14,6 +15,10 @@ type xhalf_t = bits(16)
 type regno ('n : Int), 0 <= 'n < 32 = atom('n)
 
 type regbits = bits(5) /* log2(32), would be nice to have clog in sail? */
+
+let xlen_max_unsigned =     2 ^  xlen      - 1
+let xlen_max_signed   =     2 ^ (xlen - 1) - 1
+let xlen_min_signed   = 0 - 2 ^ (xlen - 1)
 
 val cast regbits_to_regno : regbits -> {'n, 0 <= 'n < 32. regno('n)}
 function regbits_to_regno b =
