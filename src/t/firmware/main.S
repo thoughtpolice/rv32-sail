@@ -14,6 +14,12 @@ main:
 	addi sp, sp, -4
 	sw ra, 4(sp) /* ra = caller save */
 
+	/* nb: tests don't go by the normal ABI, so x1-x6 get used,
+	** even though e.g. sp is callee save. unbreak that. */
+	mv x27, gp
+	mv t5, tp
+	mv t6, sp
+
 	/* body, part 1: risc-v tests */
 
 	addi a0,zero,0
@@ -101,6 +107,11 @@ main:
 	addi  a2,a2,1
 	jal   zero,.3
 .4:
+
+	/* NB: unclobber caller stack */
+	mv gp, x27
+	mv tp, t5
+	mv sp, t6
 
 	/* body, part 2: sieve and stat output */
 	jal ra, sieve
