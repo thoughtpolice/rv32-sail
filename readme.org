@@ -54,6 +54,8 @@ equivalent of ~rv32-sail~, try [[https://github.com/cliffordwolf/picorv32][picor
   - Loads raw ELF binaries that can be booted and executed directly.
 - Included demo code
   - Full test firmware based on [[https://github.com/cliffordwolf/picorv32][picorv32]] firmware for end-to-end testing.
+  - Benchmarks: both [[https://en.wikipedia.org/wiki/Dhrystone][Dhrystone]] and [[https://www.eembc.org/coremark/][CoreMark]] are built by default.
+  - Fun: a full prototype FORTH implementation, based on JonesForth
 
 Note that ~rv32-sail~ is *not* designed to be packaged for Linux distributions,
 or used like -- or as an alternative to -- a real emulator such as QEMU. It is
@@ -75,6 +77,7 @@ ESP32.)
   - [[#running-demos-and-tests][Running demos and tests]]
     - [[#smoke-test-firmware][Smoke-Test firmware]]
     - [[#dhrystone-and-coremark-benchmarks][Dhrystone and CoreMark benchmarks]]
+    - [[#forth][FORTH]]
   - [[#basic-emulator-options][Basic emulator options]]
   - [[#emulator-configuration-options][Emulator configuration options]]
   - [[#cleaning-up][Cleaning up]]
@@ -244,6 +247,15 @@ This will:
 #+BEGIN_SRC
 ./build/cruise -e ./build/demos/dhrystone.elf
 ./build/cruise -e ./build/demos/coremark.elf
+#+END_SRC
+
+*** FORTH
+
+An old implementation of Forth I wrote, based on JonesForth, targeting the
+HiFive1. It's still incomplete -- try helping out!
+
+#+BEGIN_SRC
+./build/cruise -e ./build/demos/forth.elf
 #+END_SRC
 
 ** Basic emulator options
