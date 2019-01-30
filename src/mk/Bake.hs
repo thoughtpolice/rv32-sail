@@ -50,7 +50,7 @@ specSources mainFile
   where
     preamble = map (srcDir "preamble") [ "import", "ffi", "operators", "asm", "util" ]
             <> [ gen "hexbits" ]
-    setup    = map src [ "basics", "config" ]
+    setup    = map src [ "basics", "config", "zicsr" ]
     decoder  = [ src "decode/prologue" ]
             <> map gen [ "decode/base" ]
             <> [ src "decode/epilogue" ]
