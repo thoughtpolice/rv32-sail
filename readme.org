@@ -72,7 +72,9 @@ ESP32.)
 - [[#features][Features]]
 - [[#building][Building]]
 - [[#usage][Usage]]
-  - [[#running-the-smoke-test-firmware][Running the Smoke-Test firmware]]
+  - [[#running-demos-and-tests][Running demos and tests]]
+    - [[#smoke-test-firmware][Smoke-Test firmware]]
+    - [[#dhrystone-and-coremark-benchmarks][Dhrystone and CoreMark benchmarks]]
   - [[#basic-emulator-options][Basic emulator options]]
   - [[#emulator-configuration-options][Emulator configuration options]]
   - [[#cleaning-up][Cleaning up]]
@@ -175,7 +177,9 @@ terminal or tmux window where you run ~bake~ quite useful!
 Once you've built the emulator and test/demo firmware, all of those artifacts
 will be available under the ~./build~ directory.
 
-** Running the Smoke-Test firmware
+** Running demos and tests
+
+*** Smoke-Test firmware
 
 The self-testing firmware is available under ~./build/t/smoke.elf~, and can
 be loaded immediately. At the end, the emulator will spit out some runtime
@@ -232,6 +236,15 @@ This will:
 - Run the RISC-V assembly language tests for RV32IM
 - Run a demonstration of a Sieve to compute primes,
 - Print some timer information (extracted from CSRs)
+
+*** Dhrystone and CoreMark benchmarks
+
+[[https://en.wikipedia.org/wiki/Dhrystone][Dhrystone]] and [[https://www.eembc.org/coremark/][CoreMark]] are included as demos; just do:
+
+#+BEGIN_SRC
+./build/cruise -e ./build/demos/dhrystone.elf
+./build/cruise -e ./build/demos/coremark.elf
+#+END_SRC
 
 ** Basic emulator options
 
