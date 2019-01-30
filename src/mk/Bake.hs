@@ -83,20 +83,17 @@ emulatorRules = do
 
 --------------------------------------------------------------------------------
 
-rvcc :: String -> [(String, String)] -> FilePath -> Action ()
-rvcc arch defns out = cc src out
+rvcc :: String -> [(String, String)] -> [String] -> FilePath -> Action ()
+rvcc arch defns warns out = cc src out
   where
     src = dropDirectory1 (dropExtension out)
     cc  = cc' defaultCcParams
       { ccChoice = GCC, ccPrefix = HostPrefix "riscv32-unknown-elf-"
       , ccMarch  = Just arch, ccLang = C11, ccOpt = Size
-      , ccWarnings = [ "error", "all", "extra", "shadow", "undef"
-                     , "pointer-arith", "cast-qual", "cast-align"
-                     , "write-strings", "redundant-decls", "strict-prototypes"
-                     , "missing-prototypes"
-                     ]
+      , ccWarnings = warns
       , ccDefines = defns
       , ccFreestanding = True
+      , ccIncPaths = [ System "src/libfirm" ]
       }
 
 rvld :: String -> FilePath -> [FilePath] -> Action ()
@@ -126,15 +123,20 @@ bootObjs = liftM2 (++)
 
 bootRules :: Rules ()
 bootRules = do
-  bdir "src/libfirm/*.o" %> rvcc "rv32i" []
-  bdir "src/boot/*.o"    %> rvcc "rv32i" []
+  let warnings = [ "error", "all", "extra", "shadow", "undef"
+                 , "pointer-arith", "cast-qual", "cast-align"
+                 , "write-strings", "redundant-decls", "strict-prototypes"
+                 , "missing-prototypes"
+                 ]
+  bdir "src/libfirm/*.o" %> rvcc "rv32i" [] warnings
+  bdir "src/boot/*.o"    %> rvcc "rv32i" [] warnings
 
 demoRules :: Rules ()
 demoRules = do
   let dirToElf x = bdir "demos" </> x <.> "elf"
       getDemos   = getDirectoryDirs "src/demos"
 
-  bdir "src/demos//*.o" %> rvcc "rv32i" []
+  bdir "src/demos//*.o" %> rvcc "rv32i" [] []
   bdir "demos/*.elf" %> \out -> do
     let dir = "src" </> dropDirectory1 (dropExtension out)
     ccObjsFromSources dir >>= rvld "rv32i" out
@@ -149,14 +151,14 @@ testRules :: Rules ()
 testRules = do
   let dirToElf x = bdir "t" </> x <.> "elf"
 
-  bdir "src/t/firmware/*.o" %> rvcc "rv32i" []
+  bdir "src/t/firmware/*.o" %> rvcc "rv32i" [] []
   bdir "src/t/tests/*.o" %> \out -> do
     let tname = takeFileName (dropExtensions out)
         defns = [ ("TEST_FUNC_NAME", tname)
                 , ("TEST_FUNC_TXT", show tname)
                 , ("TEST_FUNC_RET", tname <> "_ret")
                 ]
-    rvcc "rv32im" defns out
+    rvcc "rv32im" defns [] out
 
   bdir "t/smoke.elf" %> \out -> do
     cObjs <- ccObjsFromSources "src/t/firmware"

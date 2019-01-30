@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -Wall #-}
 
+{-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module CC where
@@ -15,8 +16,9 @@ import           Development.Shake
 data CcMode     = Link | Compile                        deriving Eq
 data CcChoice   = Default | GCC | Clang                 deriving Eq
 data CcPrefix   = NoPrefix | HostPrefix String          deriving Eq
-data CcStd      = C99 | C11 | Gnu99 | Gnu11    deriving Eq
+data CcStd      = C99 | C11 | Gnu99 | Gnu11             deriving Eq
 data CcOptLevel = Speed Int | Debug | Size              deriving Eq
+data CcInclude  = System FilePath | Base FilePath       deriving Eq
 
 data CcParams
   = CcParams
@@ -26,7 +28,7 @@ data CcParams
     , ccOpt      :: CcOptLevel
     , ccMode     :: CcMode
     , ccWarnings :: [String]
-    , ccIncPaths :: [FilePath]
+    , ccIncPaths :: [CcInclude]
     , ccLibPaths :: [FilePath]
     , ccLibs     :: [String]
     , ccDefines  :: [(String, String)]
@@ -69,7 +71,7 @@ cc1 CcParams{..} sources out = do
            | GCC     <- ccChoice = "gcc"
 
     warnings = map ("-W" <>) ccWarnings
-    incPaths = map ("-I" <>) ccIncPaths
+    incPaths = concatMap (\case { System p -> [ "-I", p ]; Base p -> ["-iquote", p ] }) ccIncPaths
     libPaths = map ("-L" <>) ccLibPaths
     libs     = map ("-l" <>) ccLibs
     march    = maybe [ ] (\x -> [ "-march=" <> x ]) ccMarch
