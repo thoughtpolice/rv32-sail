@@ -9,11 +9,12 @@ currently is designed to emulate something closer to an advanced
 microcontroller. (Think of it as an emulator for a system like the [[https://www.sifive.com/boards/hifive1][HiFive1]] --
 not the [[https://www.sifive.com/boards/hifive-unleashed][HiFive Unleashed]].)
 
-~rv32-sail~ does not just come with the emulator: it also comes with a handy
-toolkit and environment containing a GCC cross compiler, the emulator, as well
-as a robust build system and test suite. If you want to try RISC-V assembly
-programming, write your own simple "bare metal" programs, or extend the RISC-V
-instruction set, this might be for you!
+~rv32-sail~ does not just come with the emulator: it's more like a full Software
+Development Kit, similar to some embedded microcontroller boards. It also comes
+with a handy environment containing a C cross compiler, the emulator, as well as
+a robust build system and test suite, and demonstrations. If you want to try
+RISC-V assembly programming, write your own simple "bare metal" programs, or
+extend the RISC-V instruction set, this might be for you!
 
 #+BEGIN_QUOTE
 *NOTE*: rv32-sail ships a RISC-V *software emulator*, which is an approximate
@@ -28,24 +29,22 @@ equivalent of ~rv32-sail~, try [[https://github.com/cliffordwolf/picorv32][picor
 - High-level RISC-V ISA emulator, written in Sail
   - Clean code is paramount with lots of comments.
   - High-level, type-safe, functional-imperative description of RISC-V.
-  - Compiled to C for an executable emulator.
-  - The RISC-V instruction decoder is automatically generated from an
-    even higher-level spec describing the decoding layout for each
-    instruction, written in Haskell.
+  - Part hand-written (execution engine), part generated (decoder) at
+    compile time.
 - Robust build system, toolchain, programming environment.
   - Global dependencies (GCC, Haskell, Sail) are provided with *[[https://nixos.org/nix][Nix]]*,
     so every dependency is taken care of for you, *on almost any Linux
     distribution*. Embedded programming toolchain nightmares are over,
     and you never fiddle with prerequisites -- and you can delete
     everything in an instant when you're done.
-  - The build system is written in Haskell, using [[https://shakebuild.com][Shake]] -- it's fast
+  - The build system is written using [[https://shakebuild.com][Shake]] -- it's fast
     and highly accurate, meaning you will (hopefully) never get out of
     date builds, broken builds, or build failures due to invalid
     dependency tracking.
   - Designed to be used incrementally and easy for contributors. Most of
     the Nix complexity is completely hidden, and the build system is
     easy as pie to use -- like a normal shell script.
-- Included toolchain for C programming
+- Included programming tools
   - GCC 8.x with the RISC-V backend is the primary C toolchain.
   - A firmware shim library called ~libfirm~ provides the basics needed
     for setting up the environment -- initial stack allocation and calling
@@ -73,14 +72,20 @@ ESP32.)
 - [[#features][Features]]
 - [[#building][Building]]
 - [[#usage][Usage]]
-  - [[#running-the-test-firmware][Running the Test Firmware]]
+  - [[#running-the-smoke-test-firmware][Running the Smoke-Test firmware]]
+  - [[#basic-emulator-options][Basic emulator options]]
   - [[#emulator-configuration-options][Emulator configuration options]]
   - [[#cleaning-up][Cleaning up]]
+- [[#source-code-layout][Source code layout]]
 - [[#softwarefirmware-development][Software/Firmware Development]]
+  - [[#programming-toolchain-support][Programming toolchain support]]
+    - [[#cc][C/C++]]
+    - [[#rust][Rust]]
+  - [[#libfirm-starter-guide][Libfirm starter guide]]
+  - [[#adding-your-own-programs][Adding your own programs]]
 - [[#emulator-runtime-configuration-reference][Emulator runtime configuration reference]]
 - [[#hacking-the-core][Hacking the core]]
   - [[#basic-high-level-overview][Basic high level overview]]
-  - [[#source-code-layout][Source code layout]]
   - [[#build-system-shenanigans][Build system shenanigans]]
   - [[#nix-nonsense][Nix nonsense]]
 - [[#faq][FAQ]]
@@ -94,22 +99,25 @@ ESP32.)
 * Building
 
 #+BEGIN_QUOTE
-*NOTE*: You must have [[https://nixos.org/nix][the Nix Package Manager]] installed in order to build the
+*NOTE*: You *must** have [[https://nixos.org/nix][the Nix Package Manager]] installed in order to build the
 emulator! While you can install Sail and the dependencies yourself, this is the
-main development method and baseline system for reproducing issues, where tests
-are written, etc. Should you ignore this, I cannot help you, and you should not
-be surprised if things don't work!
+only supported development method, and the only environment that tests, builds
+etc are run with, in the main repository. Should you ignore this, I cannot help
+you with any issues, and you should not be surprised if things don't work!
 
-If you are capable of executing ~sudo~ on your machine, then you can do a quick
-installation easily from your shell:
+If you are running an x86_64 Linux distribution, using ~systemd~, and capable of
+executing ~sudo~ on your machine, then you can do a quick installation easily
+from your shell:
 
 #+BEGIN_SRC bash
 $ sh <(https://nixos.org/nix/install) --daemon
 #+END_SRC
 
-Please read the shell script. All it does is download a tarball and execute an
+(Please read the shell script. All it does is download a tarball and execute an
 actual installation script inside, and you can find [[https://github.com/NixOS/nix/tree/master/scripts][the source code for those
-scripts]] as well.
+scripts]] as well.)
+
+*You must pass the ~--daemon~ flag to the installer!*
 
 This should work on any modern Linux distribution with namespace support and
 systemd as the init system. Then you can log back into your user account --
@@ -120,10 +128,9 @@ the emulator and test firmware, too.
 #+END_QUOTE
 
 Currently, the primary way to compile the emulator and firmware is to use the
-build system is by simply invoking it directly using the ~bake.hs~ script,
-which is a [[https://shakebuild.com][Shake build system]] -- it will transparently use a ~nix-shell~ based
-"interactive environment" to obtain all dependencies. This makes interactive
-development of the emulator easy and building it very trivial.
+build system is by simply invoking it directly using the ~bake.hs~ script. If
+you have Nix installed, this will essentially "just work" -- though the first
+invocation will take some time (see below).
 
 #+BEGIN_SRC bash
 $ git clone https://github.com/thoughtpolice/rv32-sail
@@ -131,8 +138,8 @@ $ cd rv32-sail/
 $ ./bake.hs -j
 #+END_SRC
 
-This will take some time to build the GCC cross compiler for RISC-V, as well as
-the Sail toolchain. Afterwords, it will compile the emulator as well as some
+This will *take some time to build the GCC cross compiler for RISC-V*, as well
+as the Sail toolchain. Afterwords, it will compile the emulator as well as some
 example firmware you can use. All of the build artifacts will be available under
 the ~./build/~ directory.
 
@@ -142,6 +149,7 @@ run ~nix-shell~ instead:
 
 #+BEGIN_SRC
 $ nix-shell
+...
 
 [nix-shell:~/sail-riscv32]$ sail -v
 ...
@@ -150,50 +158,56 @@ $ nix-shell
 ...
 #+END_SRC
 
-Once you're inside ~nix-shell~, you can also run the ~bake~ command, which is a
-simple wrapper to run the ~bake.hs~ script, with all the same arguments:
+Once you're inside ~nix-shell~, you can also run the ~bake~ command, which is an
+equivalent method to run the ~bake.hs~ script, with all the same arguments:
 
 #+BEGIN_SRC
 [nix-shell:~/sail-riscv32]$ bake -j
 Build completed in 0.01s
 #+END_SRC
 
-The main difference between running ~bake~ inside ~nix-shell~ or running
-~bake.hs~ directly is one of speed: the ~bake.hs~ script uses a "shell
-scripting" feature of Nix, which means invoking the script causes Nix to run. It
-takes a second or two to set up the build environment, and then run the script,
-every time you invoke it. (Despite the slowdown, the advantage of running
-~bake.hs~ directly without ~nix-shell~ is that it essentially makes the build
-system completely transparent to the user.)
-
-In contrast, running ~bake~ inside the ~nix-shell~ just runs the script
-directly, since the build environment is already available, and this means it
-"starts up" faster.
-
-For iterative development, you may find having an extra terminal or tmux window
-where you run ~bake~ quite useful!
+This command is not only shorter to type, but it executes faster than the
+"normal" shell script. For iterative development, you may find having an extra
+terminal or tmux window where you run ~bake~ quite useful!
 
 * Usage
 
 Once you've built the emulator and test/demo firmware, all of those artifacts
 will be available under the ~./build~ directory.
 
-** Running the Test Firmware
+** Running the Smoke-Test firmware
 
-The self-testing firmware is available under ~./build/t/firmware.elf~, and can
+The self-testing firmware is available under ~./build/t/smoke.elf~, and can
 be loaded immediately. At the end, the emulator will spit out some runtime
 statistics, as well as a register dump:
 
 #+BEGIN_SRC
-./build/cruise.opt -e build/t/firmware.elf
+./build/cruise.opt -e build/t/smoke.elf
 [Sail] Allocating new block 0x0
 [Sail] ELF Initial PC: 0x0
 [Sail] Executing reset vector...
 
+RUNNING RISC-V TESTS
+
 ...
 
-[Sail] Trap (EBREAK) encountered - exiting
+FINISHED RISC-V TESTS
 
+Sieve test:
+ 1st prime is 2.
+ 2nd prime is 3.
+ 3rd prime is 5.
+ ...
+ 31st prime is 127.
+checksum: 1772A48F OK
+
+CPU stats:
+  Cycle Counter: ...
+  Instruction Counter: ...
+  CPI: ...
+
+DONE
+[Sail] Trap (EBREAK) encountered - exiting
 [Sail] Finished!
 [Sail] Register dump:
 x0:	0x00000000 ra:	0x000000A0 sp:	0x00010000 gp:	0xDEADBEEF
@@ -210,11 +224,33 @@ t3:	0x00000000 t4:	0x00000000 t5:	0x00000000 t6:	0x00000000
 [Sail] Approximate IPS:       ...
 #+END_SRC
 
+This will:
+
+- Boot up the CPU, and jump to the initial reset vector (~0x00000000~),
+  inside of ~src/boot~,
+- Jump to the ~main~ entry point defined in ~src/t/firmware/main.S~,
+- Run the RISC-V assembly language tests for RV32IM
+- Run a demonstration of a Sieve to compute primes,
+- Print some timer information (extracted from CSRs)
+
+** Basic emulator options
+
+The three primary options you may use are:
+
+- ~-l~ the cycle limit, which controls how many CPU cycles the emulator will
+  execute before yielding. By default, the cycle limit is unlimited and the
+  only way to terminate the emulator is through an ~EBREAK~.
+- ~-e~ the elf binary to load. Self explanatory.
+- ~-C~ the configuration option spec; this allows you to set arbitrary
+  integer/boolean values, controlling various CPU options. (See below.)
+  
 ** Emulator configuration options
 
-The emulator has several configuration options which can be set at runtime
-in order to control various aspects of the machine's behavior. Notably, this
-includes things like disabling certain instruction set features, etc.
+The emulator has several configuration options which can be set at runtime in
+order to control various aspects of the machine's behavior. Notably, this
+includes things like disabling certain instruction set features, etc. (These are
+hardware configuration settings that take priority over the `MISA` CSR; you can
+have a feature enabled and disable it later, etc.)
 
 To get the list of options, invoke the ~cruise.opt~ executable with the
 arguments ~-C help~:
@@ -226,9 +262,70 @@ arguments ~-C help~:
 ** Cleaning up
 
 You can completely delete this directory later at any time if you want to clean
-things up, or run ~./bake.hs clean~ to have it done for you.
+things up, or run ~bake clean~ to have it done for you.
+
+* Source code layout
+
+The primary directories you need to understand are:
+
+- ~./src/mk~, which contains the build system, written in Haskell. This also
+  includes the instruction decoder, which generates Sail code at build time
+  to parse and pretty-print RISC-V instruction encodings.
+- ~./src/spec~, which contains all the Sail code for the specification,
+  including the execution engine.
+- ~./src/boot~, which contains the initial bootloader shim and reset vector
+  setup, written in assembly. (It's contained here so it's easier to find
+  and read.)
+- ~./src/libfirm~, a simple ~libc~ and bare-metal programming library that
+  demos, tests, etc all share and use.
+- ~./src/t~, which contains all the tests.
+- ~./src/demos~, which contains a bunch of fun demo programs.
+- ~./nix~, and ~release.nix~, which contain the Nix code for provisioning
+  all the needed tools.
+
+Everything else falls outside the primary raidus of the blast zone.
 
 * Software/Firmware Development
+
+** Programming toolchain support
+
+*** C/C++
+
+The default toolchain is a GCC 8.x RISC-V cross compiler for bare-metal targets
+using C.
+
+C++ is currently *not supported*, but this is only due to a few missing runtime
+bits inside ~libfirm~. Patches welcome.
+
+-----
+
+LLVM is *not supported*. While the RISC-V LLVM backend continues to be
+upstreamed in various pieces, it (to my knowledge) is still quite unstable. In
+the future, we should ideally be able to use a copy of the upstream Nix LLVM
+package with the RISC-V backend enabled, and have Clang act as a cross compiler
+instead.
+
+If adding a fork of LLVM/Clang with RISC-V support using Nix to build it is not
+too burdensome, it might be acceptable in the mean time.
+
+-----
+
+In the long run, the plan is to ship fully equipped GCC and Clang RISC-V cross
+compilers, with C++ support.
+
+*** Rust
+
+As a result of the incomplete LLVM RISC-V support, Rust is also not supported.
+
+If adding a fork of LLVM/Clang/Rust/ with RISC-V support using Nix to build it
+is not too burdensome, it might be acceptable in the mean time.
+
+-----
+
+In the long run, the plan is to find a way to ship a bare metal Rust Nightly
+cross compiler, once RISC-V support in LLVM stabilizes.
+
+** Libfirm starter guide
 
 Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Donec hendrerit tempor
 tellus. Donec pretium posuere tellus. Proin quam nisl, tincidunt et, mattis
@@ -236,6 +333,11 @@ eget, convallis nec, purus. Cum sociis natoque penatibus et magnis dis
 parturient montes, nascetur ridiculus mus. Nulla posuere. Donec vitae dolor.
 Nullam tristique diam non turpis. Cras placerat accumsan nulla. Nullam rutrum.
 Nam vestibulum accumsan nisl.
+
+** Adding your own programs
+
+Nunc rutrum turpis sed pede. Nullam eu ante vel est convallis dignissim. Nunc
+porta vulputate tellus. Donec vitae dolor. Vivamus id enim.
 
 * Emulator runtime configuration reference
 
@@ -248,18 +350,6 @@ I've tried to make contributing easy and streamlined it as much as possible for
 contributors.
 
 ** Basic high level overview
-
-** Source code layout
-
-The primary directories you need to understand are:
-
-- ~./mk~, which contains some Haskell modules for ~bake.hs~
-- ~./src/spec~, which contains all the Sail code for the specification.
-- ~./src/t~, which contains all the tests.
-
-Everything else falls outside the primary raidus of the blast zone.
-
-Finally there is the Nix build infrastructure. See below for more on that.
 
 ** Build system shenanigans
 
