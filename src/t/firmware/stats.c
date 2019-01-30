@@ -21,7 +21,7 @@ static void stats_print_dec(unsigned int val, int digits, bool zero_pad)
 	}
 	while (p != buffer) {
 		if (p[-1] == ' ' && p[-2] == ' ') p[-1] = '.';
-		print_chr(*(--p));
+		putchar(*(--p));
 	}
 }
 
@@ -29,17 +29,17 @@ void stats(void)
 {
 	unsigned int num_cycles = 0, num_instr = 0;
 
-	print_str("\nCPU stats:\n");
+	puts("\nCPU stats:");
 
 	//__asm__ volatile ("rdcycle %0; rdinstret %1;" : "=r"(num_cycles), "=r"(num_instr));
-	print_str("  Cycle counter ........");
+	printf("  Cycle counter ........");
 	stats_print_dec(num_cycles, 8, false);
-	print_str("\n  Instruction counter ..");
+	printf("\n  Instruction counter ..");
 	stats_print_dec(num_instr, 8, false);
-	print_str("\n  CPI: ");
+	printf("\n  CPI: ");
 	stats_print_dec((num_cycles / num_instr), 0, false);
-	print_str(".");
+	printf(".");
 	stats_print_dec(((100 * num_cycles) / num_instr) % 100, 2, true);
-	print_str("\n");
+	printf("\n");
 }
 

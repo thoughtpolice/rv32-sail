@@ -7,26 +7,6 @@
 
 #include "firmware.h"
 
-void print_chr(char ch)
-{
-	__asm__ __volatile__(
-		"addi a0,zero,0;"
-		"add a1,zero,%0;"
-		"ecall;\n\t"
-	:	/* No outputs */
-	:	"g" (ch)
-	:	"a0", "a1"
-	);
-}
-
-void print_str(const char *p)
-{
-	while (*p != 0) {
-		print_chr(*p);
-		p++;
-	}
-}
-
 void print_dec(unsigned int val)
 {
 	char buffer[10];
@@ -37,7 +17,7 @@ void print_dec(unsigned int val)
 	}
 	while (p != buffer) {
 		char c = *(--p);
-		print_chr('0' + c);
+		putchar('0' + c);
 	}
 }
 
@@ -45,7 +25,7 @@ void print_hex(unsigned int val, int digits)
 {
 	for (int i = (4*digits)-4; i >= 0; i -= 4) {
 		char c = "0123456789ABCDEF"[(val >> i) % 16];
-		print_chr(c);
+		putchar(c);
 	}
 }
 

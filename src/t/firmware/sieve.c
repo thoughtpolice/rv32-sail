@@ -33,20 +33,20 @@ static bool bitmap_get(int idx)
 static void print_prime(int idx, int val)
 {
 	if (idx < 10)
-		print_str(" ");
+		printf(" ");
 	print_dec(idx);
 	if (idx / 10 == 1)
 		goto force_th;
 	switch (idx % 10) {
-		case 1: print_str("st"); break;
-		case 2: print_str("nd"); break;
-		case 3: print_str("rd"); break;
+		case 1: printf("st"); break;
+		case 2: printf("nd"); break;
+		case 3: printf("rd"); break;
 	force_th:
-		default: print_str("th"); break;
+		default: printf("th"); break;
 	}
-	print_str(" prime is ");
+	printf(" prime is ");
 	print_dec(val);
-	print_str(".\n");
+	puts(".");
 
 	hash = mkhash(hash, idx);
 	hash = mkhash(hash, val);
@@ -54,7 +54,7 @@ static void print_prime(int idx, int val)
 
 void sieve(void)
 {
-	print_str("\nSieve test:\n");
+	puts("\nSieve test:");
 	int idx = 1;
 	hash = 5381;
 	print_prime(idx++, 2);
@@ -72,13 +72,13 @@ void sieve(void)
 		}
 	}
 
-	print_str("checksum: ");
+	printf("checksum: ");
 	print_hex(hash, 8);
 
 	if (hash == 0x1772A48F) {
-		print_str(" OK\n");
+		puts(" OK");
 	} else {
-		print_str(" ERROR\n");
+		puts(" ERROR");
 		__asm__ volatile ("ebreak");
 	}
 }
