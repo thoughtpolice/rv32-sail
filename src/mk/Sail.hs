@@ -6,7 +6,7 @@ module Sail where
 
 -- base
 import           Data.Maybe    ( fromMaybe )
-import           Control.Monad ( void )
+import           Control.Monad ( void, when )
 
 -- shake
 import           Development.Shake
@@ -41,14 +41,26 @@ sailcaml
   :: FilePath
   -> [FilePath]
   -> Action ()
-sailcaml out srcs = cmd
-  [ EchoStdout False
-  , Cwd (takeDirectory1 out)
-  ]
-  "sail -no_warn -ocaml"
-    [ "-o", dropDirectory1 out ]
+sailcaml out srcs = do
+  -- NOTE: the Sail Caml backend doesn't properly handle filename characters
+  -- like '.' or '-' -- it outputs ML modules that contain these raw characters
+  -- in their name/filename, which is a violation of the syntax. work around it
+  -- for now by mapping bad characters to '_', which is valid.
+  -- TODO FIXME: submit a sail bug about this
+  let bdir      = takeDirectory1 out
+      bname     = dropDirectory1 out
+      badChars  = ".-"
+      legalName = map (\c -> if any (c ==) badChars then '_' else c) bname
+
+  unit $ cmd [ EchoStdout False, Cwd bdir ] "sail"
+    "-no_warn -ocaml"
+    [ "-o", legalName ]
     [ "-ocaml_build_dir", "ocaml" ]
     (map (".." </>) srcs)
+
+  when (legalName /= bname) $ do
+    copyFile' (bdir </> legalName) (bdir </> bname)
+    liftIO $ removeFiles "." [ (bdir </> legalName) ]
 
 --------------------------------------------------------------------------------
 -- Sail utilities

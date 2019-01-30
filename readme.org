@@ -182,7 +182,7 @@ be loaded immediately. At the end, the emulator will spit out some runtime
 statistics, as well as a register dump:
 
 #+BEGIN_SRC
-./build/cruise.opt -e build/t/smoke.elf
+./build/cruise -e build/t/smoke.elf
 [Sail] Allocating new block 0x0
 [Sail] ELF Initial PC: 0x0
 [Sail] Executing reset vector...
@@ -252,11 +252,11 @@ includes things like disabling certain instruction set features, etc. (These are
 hardware configuration settings that take priority over the `MISA` CSR; you can
 have a feature enabled and disable it later, etc.)
 
-To get the list of options, invoke the ~cruise.opt~ executable with the
+To get the list of options, invoke the ~cruise~ executable with the
 arguments ~-C help~:
 
 #+BEGIN_SRC
-./build/cruise.opt -C help
+./build/cruise -C help
 #+END_SRC
 
 ** Cleaning up

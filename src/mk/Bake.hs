@@ -69,8 +69,8 @@ emulatorRules :: Rules ()
 emulatorRules = do
   -- main emulator: 'cruise' C backend, with default ELF loader
   sources <- specSources Nothing
-  sailSimRules SailBackendC     (bdir "cruise.opt") sources
-  sailSimRules SailBackendOCaml (bdir "cruise")     sources
+  sailSimRules SailBackendC     (bdir "cruise")     sources
+  sailSimRules SailBackendOCaml (bdir "cruise.ref") sources
 
   -- generate hexbits.sail
   bdir "src/spec/hexbits.sail" %> sailGenHexBits
@@ -182,4 +182,4 @@ main = shakeArgsWith myShakeOptions myFlags $ \_ targets -> pure $ Just $ do
 
   -- phonies
   "clean" ~> removeFilesAfter (bdir mempty) ["//*"]
-  "all" ~> need [ bdir "cruise", bdir "cruise.opt", "demos", "tests" ]
+  "all" ~> need [ bdir "cruise", bdir "cruise.ref", "demos", "tests" ]
