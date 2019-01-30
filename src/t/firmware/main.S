@@ -11,8 +11,8 @@
 	.balign 4, 0
 
 main:
-	addi sp, sp, -4
-	sw ra, 4(sp) /* ra = caller save */
+	addi sp, sp, -16
+	sw ra, 12(sp) /* ra = caller save */
 
 	/* nb: tests don't go by the normal ABI, so x1-x6 get used,
 	** even though e.g. sp is callee save. unbreak that. */
@@ -121,6 +121,6 @@ main:
 	li a0, 42
 
 	/* fin */
-	lw ra, 4(sp)
-	addi sp, sp, 4
+	lw ra, 12(sp)
+	addi sp, sp, 16
 	ret
