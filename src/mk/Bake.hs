@@ -83,10 +83,10 @@ emulatorRules = do
 
 --------------------------------------------------------------------------------
 
-rvcc :: String -> [(String, String)] -> [String] -> FilePath -> Action ()
-rvcc arch defns warns out = cc src out
+rvcc :: String -> [(String, String)] -> [String] -> Maybe FilePath -> FilePath -> Action ()
+rvcc arch defns warns msrc out = cc src out
   where
-    src    = dropDirectory1 (dropExtension out)
+    src    = maybe (dropDirectory1 (dropExtension out)) id msrc
     srcdir = dropFileName src
     cc  = cc' defaultCcParams
       { ccChoice = GCC, ccPrefix = HostPrefix "riscv32-unknown-elf-"
@@ -129,21 +129,43 @@ bootRules = do
                  , "write-strings", "redundant-decls", "strict-prototypes"
                  , "missing-prototypes"
                  ]
-  bdir "src/libfirm/*.o" %> rvcc "rv32i" [] warnings
-  bdir "src/boot/*.o"    %> rvcc "rv32i" [] warnings
+  bdir "src/libfirm/*.o" %> rvcc "rv32i" [] warnings Nothing
+  bdir "src/boot/*.o"    %> rvcc "rv32i" [] warnings Nothing
 
 demoRules :: Rules ()
 demoRules = do
   let dirToElf x = bdir "demos" </> x <.> "elf"
-      getDemos   = getDirectoryDirs "src/demos"
+      link out = do
+        let dir = "src" </> dropDirectory1 (dropExtension out)
+        ccObjsFromSources dir >>= rvld "rv32i" out
 
-  bdir "src/demos//*.o" %> rvcc "rv32i" [] []
-  bdir "demos/*.elf" %> \out -> do
-    let dir = "src" </> dropDirectory1 (dropExtension out)
-    ccObjsFromSources dir >>= rvld "rv32i" out
+  bdir "src/demos/42/*.o"        %> rvcc "rv32i" [] [] Nothing
+  bdir "src/demos/dhrystone/*.o" %> rvcc "rv32i" [] [] Nothing
+  bdir "src/demos/coremark/*.o"  %> rvcc "rv32i" [] [] Nothing
+
+  bdir "src/demos/forth/*.S" %> \out -> do
+    let pf    = "src/demos/forth/pc.hs"
+        proto = "src/demos/forth/proto.f"
+        kern  = dropDirectory1 out <.> ".in"
+    need [ pf, kern, proto ]
+    cmd "runghc" pf kern [ FileStdin proto, FileStdout out ]
+
+  bdir "src/demos/forth/*.o" %> \out -> do
+    let fm = "src/demos/forth/main.inc"
+    copyFile' fm (bdir fm)
+    rvcc "rv32i" [] [] (Just $ dropExtension out) out
+
+  bdir "demos/42.elf" %> link
+  bdir "demos/dhrystone.elf" %> link
+  bdir "demos/coremark.elf" %> link
+
+  bdir "demos/forth.elf" %> \out -> do
+    let obj = bdir "src/demos/forth/hf.S.o"
+    rvld "rv32i" out [ obj ]
 
   -- phony top-level rule
-  "demos" ~> do need =<< (map dirToElf <$> getDemos)
+  let demos = [ "42", "coremark", "dhrystone", "forth" ]
+  "demos" ~> need (map dirToElf demos)
 
 --------------------------------------------------------------------------------
 -- Test rules
@@ -152,14 +174,14 @@ testRules :: Rules ()
 testRules = do
   let dirToElf x = bdir "t" </> x <.> "elf"
 
-  bdir "src/t/firmware/*.o" %> rvcc "rv32i" [] []
+  bdir "src/t/firmware/*.o" %> rvcc "rv32i" [] [] Nothing
   bdir "src/t/tests/*.o" %> \out -> do
     let tname = takeFileName (dropExtensions out)
         defns = [ ("TEST_FUNC_NAME", tname)
                 , ("TEST_FUNC_TXT", show tname)
                 , ("TEST_FUNC_RET", tname <> "_ret")
                 ]
-    rvcc "rv32im" defns [] out
+    rvcc "rv32im" defns [] Nothing out
 
   bdir "t/smoke.elf" %> \out -> do
     cObjs <- ccObjsFromSources "src/t/firmware"

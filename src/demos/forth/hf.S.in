@@ -1,0 +1,909 @@
+// hf.S -- hiForth, a RISC-V FORTH implementation
+// Copyright (C) 2017-2019 Austin Seipp. See Copyright Notice in COPYING
+
+/// Commentary:
+
+  // ------------ Introduction ------------
+  //
+  // hiForth is a FORTH implementation for the RISC-V RV32IMAC architecture
+  // (RV32I = RISC-V base Integer instructions, MAC = Integer, Multiply &
+  // Divide, Atomic, Compressed).
+  //
+  // hiForth is split into two parts: hf.S, the RISC-V assembly "kernel", and
+  // hf.f, the "prelude". The kernel contains the basic execution engine. The
+  // prelude contains the basic FORTH primitives (written in FORTH) that are
+  // shipped by default. The kernel and the prelude can be combined together
+  // for easier end-user compilation of hiForth.
+  //
+  // ------------ Design ------------
+  //
+  // Lorem ipsum... (TODO FIXME)
+  //
+  // ------------ Board support ------------
+  //
+  // Currently, hiForth supports multiple RISC-V implementations, including
+  // real hardware, FPGA cores and software simulation. The supported
+  // RISC-V implementations are:
+  //
+  //   - RISC-V ISA Simulator ("Spike simulator") for RV32IMAC.
+  //   - SiFive HiFive1 Freedom E310 (RV32IMAC, 320MHz). "Rocket" RTL core.
+  //   - picorv32/RV32IMC RTL core on the Lattice iCE40 HX8K Breakout Board.
+  //
+  // In particular, the picorv32 IMC softcore configuration on the iCE40 FPGA
+  // series yields a completely open-source hardware FORTH implementation.
+  // This includes RTL synthesis, RTL simulation, verification, testing,
+  // place-and-route, upload, and hiForth itself. (A similar softcore build
+  // based on the Rocket RTL core could be constructed, but could not fit
+  // on the size-constrained iCE40 series, which picorv32 is optimized for.)
+  //
+  // For active development: the Spike simulator yields good performance and
+  // accuracy, comes with a full toolchain, and is recommended.
+  //
+  // See the associated hiForth README.md for information on compiling for a
+  // specific board/configuration.
+
+/// Changelog:
+
+  // 20170106 -- Initial prototype
+  // 20190130 -- New version for Sail emulation.
+
+/// Known bugs:
+
+  // - Doesn't work.
+  // - Might work someday.
+
+/* -------------------------------------------------------------------------- */
+/* -- Intro ----------------------------------------------------------------- */
+
+/* TODO FIXME: actually propagate version info */
+#if 0
+#if !defined(HF_VERSION) || !defined(HF_IDENT)
+#error HF_VERSION and HF_IDENT aren't defined. It must be ghosts haunting you.
+#endif
+#else
+#define HF_VERSION 000100
+#define HF_IDENT   "hiForth: 0.1pre"
+#endif
+
+// Object file metadata
+.set FORTH_VERSION,HF_VERSION
+.ident HF_IDENT
+.file "hf.S"
+
+#define RETURN_STACK_ENTRIES 32
+#define PARAM_STACK_ENTRIES  64
+
+#define SCRATCH_BUFFER_SIZE  32
+
+/* -------------------------------------------------------------------------- */
+/* -- Basic macros ---------------------------------------------------------- */
+
+// Register mappings
+#define R_SP   s2  /* x18 -- parameter stack pointer */
+#define R_FP   s3  /* x19 -- return stack pointer */
+#define R_IP   s4  /* x20 -- instruction pointer, loaded into link reg */
+#define R_LK   s5  /* x21 -- link register */
+#define R_TMP1 s6  /* x22 -- temporary */
+#define R_TMP2 s7  /* x23 -- temporary */
+#define R_TMP3 s8  /* x24 -- temporary */
+#define R_TMP4 s9  /* x25 -- temporary */
+#define R_TMP5 s10 /* x26 -- temporary */
+#define R_TMP6 s11 /* x27 -- temporary */
+#define R_JA   ra  /* x1  -- C link register */
+#define R_C0   a0  /* x10 -- C argument/return */
+#define R_C1   a1  /* x11 -- C argument/return */
+
+// Define an externally visible function with C linkage.
+.macro defextern name
+  .pushsection .text
+  .globl \name
+	.type \name, @function
+\name:
+.endm
+
+// End an externally visible function, and emit size information for the ELF
+// object. And it makes the source code look like a weird Pascal language!
+.macro endextern name
+  .size \name, .-\name
+  .popsection // .text
+.endm
+
+// 32-bit immediate labels must be loaded in two instructions: one loading the
+// upper half, and one adding the lower half.
+.macro loadl reg, label
+  lui \reg, %hi(\label)
+  add \reg, \reg, %lo(\label)
+.endm
+
+/* -------------------------------------------------------------------------- */
+/* -- Setup, primitive macros ----------------------------------------------- */
+
+// Load the link register, increment the instruction pointer, and execute
+// the next loaded instruction
+.macro fnext
+  lw R_LK, 0(R_IP)   // link = *(ip+0)
+  add R_IP, R_IP, 4  // ip += 4;
+  lw R_TMP1, 0(R_LK) // t1 = *link;
+  jr R_TMP1          // (*t1)();
+.endm
+
+// Push a value onto the return frame stack.
+.macro frpush reg
+  add R_FP, R_FP, -4 // fp += 4
+  sw \reg, 0(R_FP)   // *fp = \reg
+.endm
+
+// Pop a value off the return frame stack.
+.macro frpop reg
+  lw \reg, 0(R_FP)  // \reg = *fp
+  add R_FP, R_FP, 4 // fp -= 4
+.endm
+
+// Push a value onto the parameter stack.
+.macro prpush reg
+  add R_SP, R_SP, -4 // sp += 4
+  sw \reg, 0(R_SP)   // *sp = \reg
+.endm
+
+// Pop a value off the parameter stack.
+.macro prpop reg
+  lw \reg, 0(R_SP)  // \reg = *sp
+  add R_SP, R_SP, 4 // sp -= 4
+.endm
+
+// Perform an external C call
+.macro ccall func
+  prpush R_JA
+  call \func
+  prpop R_JA
+.endm
+
+/* -- Code definition --------- */
+
+// Defines a word in terms of primitive assembly code.
+.macro defcode name, namelen, label, fwd=666f
+  .pushsection .text
+  .balign 4, 0
+  .globl name_\label
+name_\label:
+666:
+  .int \fwd
+  .int 999b
+999:
+  .byte 0 // FLAGS: TODO FIXME
+  .byte \namelen
+  .ascii "\name"
+  .balign 4, 0
+  .globl \label
+	.type \label, @function
+\label:
+  .word code_\label
+
+  .pushsection .text
+  .balign 4, 0
+  .globl code_\label
+code_\label:
+.endm
+
+.macro endcode name
+  .popsection // .text
+  .popsection // .rodata
+.endm
+
+// Defines a word in terms of other words. This is, essentially, a way of
+// declaring a statically compiled dictionary.
+.macro defword name, namelen, label, fwd=666f
+  .pushsection .text
+  .balign 4, 0
+  .globl name_\label
+name_\label:
+666:
+  .int \fwd
+  .int 999b
+999:
+  .byte 0 // FLAGS: TODO FIXME
+  .byte \namelen
+  .ascii "\name"
+  .balign 4, 0
+  .globl \label
+  .type \label,@function
+\label:
+  .word DOCOL
+.endm
+
+.macro endword name
+  .popsection // .rodata
+.endm
+
+// Define a variable. When used, push the address of the variable on the stack.
+.macro defvar name, namelen, label, initial=0
+  defcode \name, \namelen, \label
+    loadl R_TMP1, v_\name
+    prpush R_TMP1
+    fnext
+  v_\name:
+    .int \initial
+  endcode \name
+.endm
+
+// Define a constant. When used, push a literal value onto the stack.
+.macro defconst name, namelen, label, value
+  defcode \name, \namelen, \label
+    loadl R_TMP1, \value
+    prpush R_TMP1
+    fnext
+  endcode \name
+.endm
+
+/* -------------------------------------------------------------------------- */
+/* -- DOCOL ("Do Colon") ---------------------------------------------------- */
+
+.pushsection .text
+
+// PRIMITIVE: DOCOL
+// NOTES: Lorem ipsum... TODO FIXME
+.balign 4, 0
+DOCOL_HEADER: .word 666f
+DOCOL: 999:
+  frpush R_IP       // save frame
+  add R_LK, R_LK, 4 // increment
+  mv R_IP, R_LK     // update IP
+  fnext             // go
+.popsection // .text
+
+/* -------------------------------------------------------------------------- */
+/* -- Primitives ------------------------------------------------------------ */
+
+// PRIMITIVE: DROP ( x -- )
+// ARGUMENTS: x -- arbitrary value
+// NOTES: Pops the top stack value, and returns immediately.
+defcode "DROP",4,DROP
+  prpop R_TMP1
+  fnext
+endcode "DROP"
+
+// PRIMITIVE: SWAP ( x y -- y x )
+// ARGUMENTS: x,y -- abitrary values
+// RETURNS:   y,x -- The top two stack arguments 'x' and 'y' swapped around
+defcode "SWAP",4,SWAP
+  prpop R_TMP1
+  prpop R_TMP2
+  prpush R_TMP1
+  prpush R_TMP2
+  fnext
+endcode "SWAP"
+
+// PRIMITIVE: DUP ( x -- x x )
+// ARGUMENTS: x -- arbitrary value
+// RETURNS:   x -- The top stack value 'x', duplicated.
+defcode "DUP",3,DUP
+  lw R_TMP1, 0(R_SP)
+  prpush R_TMP1
+  fnext
+endcode "DUP"
+
+// PRIMITIVE: OVER ( x y -- x y x )
+// ARGUMENTS: x -- arbitrary value
+// NOTES: Duplicates 'x' and pushes it over 'y'
+defcode "OVER",4,OVER
+  lw R_TMP1, 4(R_SP)
+  prpush R_TMP1
+  fnext
+endcode "OVER"
+
+// PRIMITIVE: ROT ( x y z -- y z x )
+// ARGUMENTS: x,y,z -- arbitrary values
+// RETURNS:   y,z,x -- input words, rotated 'left'
+defcode "ROT",3,ROT
+  prpop R_TMP1 // z
+  prpop R_TMP2 // y
+  prpop R_TMP3 // x
+
+  prpush R_TMP2
+  prpush R_TMP1
+  prpush R_TMP3
+  fnext
+endcode "ROT"
+
+// PRIMITIVE: -ROT ( x y z -- z x y )
+// ARGUMENTS: x,y,z -- arbitrary values
+// RETURNS:   z,x,y -- input words, rotated 'right'
+defcode "-ROT",4,NROT
+  prpop R_TMP1 // z
+  prpop R_TMP2 // y
+  prpop R_TMP3 // x
+
+  prpush R_TMP1
+  prpush R_TMP3
+  prpush R_TMP2
+  fnext
+endcode "-ROT"
+
+// PRIMITIVE: 2DROP ( x y -- )
+// ARGUMENTS: x,y -- arbitrary values
+// NOTES: Pops the top two stack arguments, and returns immediately.
+defcode "2DROP",5,TWODROP
+  prpop R_TMP1
+  prpop R_TMP2
+  fnext
+endcode "2DROP"
+
+// PRIMITIVE: 2DUP ( x y -- x y x y )
+// ARGUMENTS: x,y -- arbitrary values
+// NOTES: Duplicates the top two stack arguments.
+defcode "2DUP",4,TWODUP
+  lw R_TMP1, 0(R_SP)
+  lw R_TMP2, 4(R_SP)
+  prpush R_TMP2
+  prpush R_TMP1
+  fnext
+endcode "2DUP"
+
+// PRIMITIVE: 2SWAP ( w x y z -- x w z y )
+// ARGUMENTS: w,x,y,z -- arbitrary values
+// NOTES: Swaps the top two *pairs* of stack values
+defcode "2SWAP",5,TWOSWAP
+  prpop R_TMP1
+  prpop R_TMP2
+  prpop R_TMP3
+  prpop R_TMP4
+  prpush R_TMP2
+  prpush R_TMP1
+  prpush R_TMP4
+  prpush R_TMP3
+  fnext
+endcode "2SWAP"
+
+// PRIMITIVE: 1+ ( x -- y )
+// ARGUMENTS: x -- arbitrary word
+// RETURNS:   y -- 'x', incremented by 1
+defcode "1+",2,INCR
+  prpop R_TMP1
+	addi R_TMP1, R_TMP1, 1
+	prpush R_TMP1
+  fnext
+endcode "1+"
+
+// PRIMITIVE: 1- ( x -- y )
+// ARGUMENTS: x -- arbitrary word
+// RETURNS:   y -- 'x', decremented by 1
+defcode "1-",2,DECR
+  prpop R_TMP1
+	addi R_TMP1, R_TMP1, -1
+	prpush R_TMP1
+  fnext
+endcode "1-"
+
+// PRIMITIVE: 4+ ( x -- y )
+// ARGUMENTS: x -- arbitrary word
+// RETURNS:   y -- 'x', incremented by 4
+defcode "4+",2,INCR4
+  prpop R_TMP1
+	addi R_TMP1, R_TMP1, 4
+	prpush R_TMP1
+  fnext
+endcode "4+"
+
+// PRIMITIVE: 4- ( x -- y )
+// ARGUMENTS: x -- arbitrary word
+// RETURNS:   y -- 'x', decremented by 4
+defcode "4-",2,DECR4
+  prpop R_TMP1
+	addi R_TMP1, R_TMP1, -4
+	prpush R_TMP1
+  fnext
+endcode "4-"
+
+// PRIMITIVE: + ( x y -- z )
+// ARGUMENTS: x,y -- arbitrary words
+// RETURNS:   z   -- x added to y
+defcode "+",1,ADD
+  prpop R_TMP1
+  prpop R_TMP2
+	add R_TMP1, R_TMP1, R_TMP2
+	prpush R_TMP1
+  fnext
+endcode
+
+// PRIMITIVE: - ( x y -- z )
+// ARGUMENTS: x,y -- arbitrary words
+// RETURNS:   z   -- y subtracted from x
+defcode "-",1,SUB
+  prpop R_TMP1
+  prpop R_TMP2
+	sub R_TMP1, R_TMP2, R_TMP1
+	prpush R_TMP1
+  fnext
+endcode
+
+/* -- Comparison primitives -- */
+
+// PRIMITIVE: EQU ( x y -- z )
+// ARGUMENTS: x,y -- arbitrary values
+// RETURNS:   z   -- 1 if x equals y, 0 otherwise
+defcode "=",1,EQU
+  prpop R_TMP1
+  prpop R_TMP2
+
+  bne R_TMP1, R_TMP2, 1f
+  li R_TMP1, 1
+  prpush R_TMP1
+  fnext
+1:
+  li R_TMP1, 0
+  prpush R_TMP1
+  fnext
+endcode "="
+
+// PRIMITIVE: < ( x y -- z )
+// ARGUMENTS: x,y -- arbitrary values
+// RETURNS:   z   -- 1 if x is less than y, 0 otherwise
+defcode "<",1,LT
+  prpop R_TMP1
+  prpop R_TMP2
+
+  blt R_TMP2, R_TMP1, 1f
+  li R_TMP1, 0
+  prpush R_TMP1
+  fnext
+1:
+  li R_TMP1, 1
+  prpush R_TMP1
+  fnext
+endcode "<"
+
+// PRIMITIVE: >= ( x y -- z )
+// ARGUMENTS: x,y -- arbitrary values
+// RETURNS:   z   -- 1 if x is greater-than-or-equal-to y, 0 otherwise
+defcode ">=",2,GE
+  prpop R_TMP1
+  prpop R_TMP2
+
+  bge R_TMP2, R_TMP1, 1f
+  li R_TMP1, 0
+  prpush R_TMP1
+  fnext
+1:
+  li R_TMP1, 1
+  prpush R_TMP1
+  fnext
+endcode ">="
+
+/* -- Bitwise operations -- */
+
+// PRIMITIVE: AND ( x y -- z )
+// ARGUMENTS: x,y -- arbitrary values
+// RETURNS:   z   -- 'logical and' of x with y
+defcode "AND",3,AND
+  prpop R_TMP1
+  prpop R_TMP2
+  and R_TMP3, R_TMP1, R_TMP2
+  prpush R_TMP3
+  fnext
+endcode "AND"
+
+// PRIMITIVE: OR ( x y -- z )
+// ARGUMENTS: x,y -- arbitrary values
+// RETURNS:   z   -- 'logical or' of x with y
+defcode "OR",2,OR
+  prpop R_TMP1
+  prpop R_TMP2
+  or R_TMP3, R_TMP1, R_TMP2
+  prpush R_TMP3
+  fnext
+endcode "OR"
+
+// PRIMITIVE: XOR ( x y -- z )
+// ARGUMENTS: x,y -- arbitrary values
+// RETURNS:   z   -- 'logical xor' of x with y
+defcode "XOR",3,XOR
+  prpop R_TMP1
+  prpop R_TMP2
+  xor R_TMP3, R_TMP1, R_TMP2
+  prpush R_TMP3
+  fnext
+endcode "XOR"
+
+// PRIMITIVE: INVERT ( x -- y )
+// ARGUMENTS: x -- arbitrary value
+// RETURNS:   y -- 'logical not' of x
+defcode "INVERT",6,INVERT
+  prpop R_TMP1
+  neg R_TMP2, R_TMP1
+  prpush R_TMP2
+  fnext
+endcode "INVERT"
+
+/* -- Memory primitives -- */
+
+// PRIMITIVE: ! ( a w -- )
+// ARGUMENTS: a -- address, w -- word to write
+// NOTES: Writes word 'w' to memory address 'a'
+defcode "!",1,STORE
+  prpop R_TMP1
+  prpop R_TMP2
+  sw R_TMP2, 0(R_TMP1)
+  fnext
+endcode "!"
+
+// PRIMITIVE: @ ( a -- w )
+// ARGUMENTS: a -- address
+// RETURNS:   w -- word at memory address 'a'
+defcode "@",1,FETCH
+  prpop R_TMP1
+  lw R_TMP2, 0(R_TMP1)
+  prpush R_TMP2
+  fnext
+endcode "@"
+
+// PRIMITIVE: +! ( a x -- )
+// ARGUMENTS: a -- address, x -- arbitrary word
+// NOTES: Loads the word at address 'a', adds 'x', and stores back to 'a'
+defcode "+!",2,ADDSTORE
+  prpop R_TMP1 // addr
+  prpop R_TMP2 // incr
+
+  lw R_TMP3, 0(R_TMP1)
+  add R_TMP2, R_TMP2, R_TMP3
+  sw R_TMP2, 0(R_TMP1)
+  fnext
+endcode "+!"
+
+// PRIMITIVE: -! ( a x -- )
+// ARGUMENTS: a -- address, x -- arbitrary word
+// NOTES: Loads the word at address 'a', subtracts 'x', and stores back to 'a'
+defcode "-!",2,SUBSTORE
+  prpop R_TMP1 // addr
+  prpop R_TMP2 // decr
+
+  lw R_TMP3, 0(R_TMP1)
+  sub R_TMP2, R_TMP3, R_TMP2
+  sw R_TMP2, 0(R_TMP1)
+  fnext
+endcode "-!"
+
+// PRIMITIVE: C! ( a b -- )
+// ARGUMENTS: a -- address, b -- byte to write
+// NOTES: Writes byte 'b' to memory address 'a'
+defcode "C!",2,STOREBYTE
+  prpop R_TMP1
+  prpop R_TMP2
+  sb R_TMP2, 0(R_TMP1)
+  fnext
+endcode "C!"
+
+// PRIMITIVE: C@ ( a -- b )
+// ARGUMENTS: a -- address
+// RETURNS    b -- byte at memory address 'a'
+defcode "C@",2,FETCHBYTE
+  prpop R_TMP1
+  lb R_TMP2, 0(R_TMP1)
+  prpush R_TMP2
+  fnext
+endcode "C@"
+
+// PRIMITIVE: CMOVE ( len dest src -- )
+// ARGUMENTS: ...
+// NOTES: Lorem ipsum... TODO FIXME
+defcode "CMOVE",5,CMOVE
+  prpop R_TMP1 // length
+  prpop R_TMP2 // dest
+  prpop R_TMP3 // source
+  li R_TMP4, 0 // loop
+1:
+  xor R_TMP5, R_TMP5, R_TMP5 // clear
+  bge R_TMP4, R_TMP1, 2f     // jump?
+
+  lb R_TMP5, 0(R_TMP3)       // load byte
+  sb R_TMP5, 0(R_TMP2)       // store byte
+
+  add R_TMP2, R_TMP2, 1
+  add R_TMP3, R_TMP3, 1
+  add R_TMP4, R_TMP4, 1
+  j 1b
+2:
+  fnext
+endcode
+
+/* -- Return stack primitives -- */
+
+// PRIMITIVE: >F ( v -- )
+// ARGUMENTS: v -- value
+// NOTES: Pushes the value 'v' onto the return stack.
+defcode ">F",2,TOFRAME
+  prpop R_TMP1
+  frpush R_TMP1
+  fnext
+endcode ">F"
+
+// PRIMITIVE: F> ( -- v )
+// RETURNS: v -- return stack value
+// NOTES: Pops the top value 'v' off the return stack returns it, i.e. adds
+// a new.
+defcode "F>",2,FROMFRAME
+  frpop R_TMP1
+  prpush R_TMP1
+  fnext
+endcode "F>"
+
+// PRIMITIVE: FP@ ( -- a )
+// RETURNS:   a -- address of return frame
+// NOTES: Returns the value of the current frame pointer, i.e. the address
+// of the return stack.
+defcode "FP@",3,FPFETCH
+  prpush R_FP
+  fnext
+endcode
+
+// PRIMITIVE: FP! ( a -- )
+// ARGUMENTS: a -- address
+// NOTES: Modifies the return stack pointer to point to address 'a', i.e.
+// changes the return stack to a new return stack.
+defcode "FP!",3,FPSTORE
+  prpop R_FP
+  fnext
+endcode "SP!"
+
+// PRIMITIVE: FDROP ( -- )
+// NOTES: Drops the top value off the return stack, and does not return
+// anything.
+defcode "FDROP",5,FDROP
+  add R_FP, R_FP, 4
+  fnext
+endcode "FDROP"
+
+/* -- Parameter stack primitives -- */
+
+// PRIMITIVE: SP@ ( -- a )
+// RETURNS:   a -- address of parameter stack
+// NOTES: Returns the value of the current stack pointer, i.e. the address
+// of the current parameter stack.
+defcode "SP@",3,SPFETCH
+  prpush R_SP
+  fnext
+endcode "SP@"
+
+// PRIMITIVE: SP! ( a -- )
+// ARGUMENTS: a -- address
+// NOTES: Modifies the parameter stack pointer to point to a new address 'a',
+// i.e. changes the parameter stack to a new parameter stack.
+defcode "SP!",3,SPSTORE
+  prpop R_SP
+  fnext
+endcode "SP!"
+
+/* -- Branch primitives -- */
+
+// PRIMITIVE: BRANCH ( -- )
+// NOTES: Lorem ipsum... TODO FIXME
+defcode "BRANCH",6,BRANCH
+  lw R_TMP1, 0(R_IP)
+  add R_IP, R_IP, R_TMP1
+  fnext
+endcode "BRANCH"
+
+// PRIMITIVE: 0BRANCH ( -- )
+// NOTES: Lorem ipsum... TODO FIXME
+defcode "0BRANCH",7,ZBRANCH
+  prpop R_TMP1
+  xor R_TMP2, R_TMP2, R_TMP2
+  beq R_TMP1, R_TMP2, 2f
+  add R_IP, R_IP, 4
+  fnext
+2:
+  j code_BRANCH
+endcode "0BRANCH"
+
+/* -- String primitives -- */
+
+// PRIMITIVE: EMIT ( c -- )
+// ARGUMENTS: c -- ASCII character
+// NOTES: Prints the ascii character 'c' (a byte) to the given system
+// output terminal.
+defcode "EMIT",8,EMIT
+  lb R_C0, 0(R_SP)
+  prpop R_TMP1 // throw away
+
+  ccall __hiforth_putchar
+  fnext
+endcode
+
+/* -- Return/exit primitives -- */
+
+// PRIMITIVE: QUIT ( -- )
+// NOTES: Lorem ipsum... TODO FIXME
+defword "QUIT",4,QUIT
+  .word FZ,FPSTORE
+  .word BRANCH,-12
+  // TODO FIXME
+endword "QUIT"
+
+// PRIMITIVE: EXIT ( -- )
+// NOTES: Exits a FORTH procedure. Should not be called manually, as all words
+// implicitly have an 'exit' defined. Modifies the return stack.
+defcode "EXIT",4,EXIT
+  frpop R_IP
+  fnext
+endcode "EXIT"
+
+/* -- Literals -- */
+
+// PRIMITIVE: LIT ( -- )
+// NOTES: Lorem ipsum... TODO FIXME
+defcode "LIT",3,LIT
+  lw R_TMP1, 0(R_IP)
+  add R_IP, R_IP, 4
+  prpush R_TMP1
+  fnext
+endcode "LIT"
+
+// PRIMITIVE: LITSTRING ( -- )
+// NOTES: Lorem ipsum... TODO FIXME
+defcode "LITSTRING",9,LITSTRING
+  // TODO FIXME
+  fnext
+endcode "LITSTRING"
+
+/* -- Compilation primitives -- */
+
+// NOTE: DFA> is defined in protoForth in terms of >CFA
+
+// PRIMITIVE: >CFA ( a -- cw )
+// ARGUMENTS: a -- address of a dictionary
+// RETURNS:   c -- codeword of dictionary
+// NOTES: Returns the codeword 'c' of a given dictionary, located at address
+// 'a'.
+defcode ">CFA",4,TCFA
+  prpop R_TMP1
+  xor R_TMP2, R_TMP2, R_TMP2
+
+  // the easy part is skipping past the basic metadata, including the actual
+  // name itself
+  addi R_TMP1, R_TMP1, 8     // skip link chain entries
+  addi R_TMP1, R_TMP1, 1     // TODO FIXME: skip flags
+  lw R_TMP2, 0(R_TMP1)       // load length byte
+  addi R_TMP1, R_TMP1, 1     // skip length byte
+  add R_TMP1, R_TMP1, R_TMP2 // add length
+
+  // because the codeword after 'name' is on a 4-byte boundary, the bottom
+  // two bits (0b11 = 3) of the addr will always be clear. thus we can just
+  // add 3 bytes to push ourselves into the correct 4-byte aligned range,
+  // and mask the bottom two bits to get the beginning of the range.
+  addi R_TMP1, R_TMP1, 3     // increment to boundary
+  andi R_TMP1, R_TMP1, ~3    // mask to get range beginning
+
+  prpush R_TMP1
+  fnext
+endcode ">CFA"
+
+/* -------------------------------------------------------------------------- */
+/* -- Variables ------------------------------------------------------------- */
+
+defvar "STATE",5,STATE
+defvar "HERE",4,HERE
+defvar "S0",2,SZ
+defvar "BASE",4,BASE,10
+
+/* -------------------------------------------------------------------------- */
+/* -- Constants ------------------------------------------------------------- */
+
+// PRIMITIVE: VERSION ( -- v ), pushes the integer version value.
+defconst "VERSION",7,VERSION,FORTH_VERSION
+
+// PRIMITIVE: VERSIONSTR ( -- a ), pushes the address of the version string.
+defconst "VERSIONSTR",10,VERSIONSTR,FORTH_IDENT
+
+// PRIMITIVE: F0 ( -- a ), top of the return stack
+defconst "F0",2,FZ,rstack_top
+
+// PRIMITIVE: DOCOL ( -- a ), address of the 'DOCOL' word.
+defconst "DOCOL",5,__DOCOL,DOCOL
+
+/* -------------------------------------------------------------------------- */
+/* -- Main entry point ------------------------------------------------------ */
+
+defextern __hiforth_main
+  /* -- Prologue -- */
+.LPr:
+  loadl R_SP, pstack_top // Parameter stack
+  loadl R_FP, rstack_top // Return frame stack
+  loadl R_IP, 2f         // Start IP, the 'cold start' word entry
+
+  /* -- Body -- */
+.Lbody:
+  // Begin executing FORTH at FORTH_MAIN
+  fnext
+
+  // Define the 'cold start' word, which simply goes straight to
+  // FORTH_MAIN, and once it returns, jumps to the epilogue.
+2: .word PROTOMAIN, 3f
+
+  /* -- Epilogue -- */
+3:
+  // Dummy return frame entry. When EXIT is called to exit the 'main' word
+  // that is first invoked, it will pop the address of label '2' into R_IP,
+  // which will then be loaded into R_LK = *R_IP.
+  .word .LEp
+.LEp:
+  prpop a0
+  jr ra    // Exit
+endextern __hiforth_main
+
+/* -------------------------------------------------------------------------- */
+/* -- Data segments --------------------------------------------------------- */
+
+/* -- .rodata -- */
+.pushsection .rodata
+FORTH_IDENT: .asciz HF_IDENT
+.popsection // .rodata
+
+/* -- .bss -- */
+.pushsection .bss
+
+// Return stack frames for FORTH invocations.
+.balign 4, 0
+rstack: .space RETURN_STACK_ENTRIES*4
+rstack_top:
+
+// Parameter stack frames for FORTH calls.
+.balign 4, 0
+pstack: .space PARAM_STACK_ENTRIES*4
+pstack_top:
+
+// Scratch buffer, used to read input data into a temporary buffer.
+.balign 4, 0
+scratch: .space SCRATCH_BUFFER_SIZE
+scratch_top:
+
+.popsection // .bss
+
+/* -------------------------------------------------------------------------- */
+/* -- main() shim for C ABI ------------------------------------------------- */
+
+#include "main.inc"
+
+/* -------------------------------------------------------------------------- */
+/* -- dummy PROTOMAIN ------------------------------------------------------- */
+
+defword "PROTOMAIN",9,PROTOMAIN,fwd=0
+  .word LIT,'!'
+  .word LIT,'D'
+  .word LIT,'L'
+  .word LIT,'R'
+  .word LIT,'O'
+  .word LIT,'W'
+  .word LIT,' '
+  .word LIT,'O'
+  .word LIT,'L'
+  .word LIT,'L'
+  .word LIT,'E'
+  .word LIT,'H'
+  .word EMIT
+  .word EMIT
+  .word EMIT
+  .word EMIT
+  .word EMIT
+  .word EMIT
+  .word EMIT
+  .word EMIT
+  .word EMIT
+  .word EMIT
+  .word EMIT
+
+  .word LIT,10
+  .word EMIT
+  .word EXIT
+endword "PROTOMAIN"
+
+/* -------------------------------------------------------------------------- */
+/* -- El fin ---------------------------------------------------------------- */
+
+// Local Variables:
+// mode: asm
+// fill-column: 80
+// indent-tabs-mode: nil
+// c-basic-offset: 2
+// buffer-file-coding-system: utf-8-unix
+// End:
+
+/* ------------------------------ hf.S ends here ---------------------------- */
