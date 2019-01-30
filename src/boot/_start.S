@@ -52,6 +52,14 @@ start:
 	addi gp, gp, %lo(0xdeadbeef)
 	addi tp, gp, 0
 
+	/* align stack (16-byte alignment for rv cconv) */
+	addi sp, sp, -16
+	/* write zeros for argc/argv */
+	sw zero,0(sp)
+	sw zero,4(sp)
+	sw zero,8(sp)
+	sw zero,12(sp)
+
 	/* call main */
 	jal ra, main
 	mv t1, a0 /* save return */
