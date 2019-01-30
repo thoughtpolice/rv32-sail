@@ -59,8 +59,7 @@ sailcaml out srcs = do
     (map (".." </>) srcs)
 
   when (legalName /= bname) $ do
-    copyFile' (bdir </> legalName) (bdir </> bname)
-    liftIO $ removeFiles "." [ (bdir </> legalName) ]
+    cmd "mv" (bdir </> legalName) (bdir </> bname)
 
 --------------------------------------------------------------------------------
 -- Sail utilities
