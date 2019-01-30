@@ -55,13 +55,23 @@ let
 
   # Write out a stupid wrapper for 'runghc' which sets the include path to
   # include the ./mk directory. This is to make the build system nicer, because
-  # nix-shell does not support passing these arguments directly. This is used
-  # only by bake.hs
+  # nix-shell does not support passing these arguments directly.
+
+  # runghc-bake is only used for the shebang line in bake.hs
   runGhcWrapper = pkgs.writeShellScriptBin "runghc-bake" ''
-    exec runghc -isrc/mk $@
+    ( \
+      SRC_DIR=$(${pkgs.git}/bin/git rev-parse --show-toplevel) && \
+      exec runghc -i$SRC_DIR/src/mk "$@" \
+    )
   '';
+
+  # 'bake' can be used from anywhere, as long as you're inside 'nix-shell'.
+  # starts faster, too. TODO FIXME: can we do this root-dir hack without git?
   runBakeWrapper = pkgs.writeShellScriptBin "bake" ''
-    exec runghc -isrc/mk bake.hs $@
+    ( \
+      cd $(${pkgs.git}/bin/git rev-parse --show-toplevel) && \
+      exec runghc -isrc/mk bake.hs "$@" \
+    )
   '';
 
   # -----------------------------
