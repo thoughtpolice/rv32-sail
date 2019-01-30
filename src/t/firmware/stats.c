@@ -31,7 +31,7 @@ void stats(void)
 
 	puts("\nCPU stats:");
 
-	//__asm__ volatile ("rdcycle %0; rdinstret %1;" : "=r"(num_cycles), "=r"(num_instr));
+	__asm__ __volatile__("rdcycle %0; rdinstret %1;" : "=r"(num_cycles), "=r"(num_instr));
 	printf("  Cycle counter ........");
 	stats_print_dec(num_cycles, 8, false);
 	printf("\n  Instruction counter ..");

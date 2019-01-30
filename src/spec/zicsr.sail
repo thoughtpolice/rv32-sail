@@ -76,6 +76,19 @@ function __CSR_read (mode : bits(2) @ priv : bits(2) @ regno : bits(8)) =
   match (csr_mode_bits(mode), csr_priv_bits(priv), regno) {
     /* ----------------------------- User CSRs ------------------------------ */
 
+    // cycle[h]
+    (CSR_MODE_READONLY(), CSR_PRIV_USER(), 0x00) => { to_bits(64, get_cycle_count())[31 .. 0]; },
+    (CSR_MODE_READONLY(), CSR_PRIV_USER(), 0x80) => { to_bits(64, get_cycle_count())[63 .. 32]; },
+
+    // time[h]
+    (CSR_MODE_READONLY(), CSR_PRIV_USER(), 0x01) => { to_bits(64, get_time_ns())[31 .. 0]; },
+    (CSR_MODE_READONLY(), CSR_PRIV_USER(), 0x81) => { to_bits(64, get_time_ns())[63 .. 32]; },
+
+    // instret[h]
+    // NOTE: -1 since the current instruction isn't retired; gives effective CPI = 1
+    (CSR_MODE_READONLY(), CSR_PRIV_USER(), 0x02) => { to_bits(64, get_cycle_count() - 1)[31 .. 0]; },
+    (CSR_MODE_READONLY(), CSR_PRIV_USER(), 0x82) => { to_bits(64, get_cycle_count() - 1)[63 .. 32]; },
+
     /* ---------------------------- Machine CSRs ---------------------------- */
 
     // MISA reads: always RV32 (0b01), with 4-bit empty field, and MISA regs
