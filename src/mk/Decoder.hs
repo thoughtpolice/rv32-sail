@@ -115,6 +115,7 @@ baseInstrs =
   , BaseInstr "CSRRW"   (ITy 0b001 0b1110011)
   , BaseInstr "CSRRS"   (ITy 0b010 0b1110011)
   , BaseInstr "CSRRC"   (ITy 0b011 0b1110011)
+
   , BaseInstr "CSRRWI"  (ITy 0b101 0b1110011)
   , BaseInstr "CSRRSI"  (ITy 0b110 0b1110011)
   , BaseInstr "CSRRCI"  (ITy 0b111 0b1110011)
@@ -239,6 +240,15 @@ genPrintInsnHead (fixupName -> nam) ty = caseHacks <> "function clause print_ins
       "JALR"  -> "function clause print_insn JALR(0b000000000000, 0b00001, 0b00000) = \"ret\"\n"
       "SLTIU" -> "function clause print_insn SLTIU(0b000000000001, rs, rd) = \"seqz \" ^ rd ^ \", \" ^ rs \n"
       "SLTU"  -> "function clause print_insn SLTU(rs, 0b00000, rd) = \"snez \" ^ rd ^ \", \" ^ rs \n"
+
+      "CSRRW" -> "function clause print_insn CSRRW(csr, rs1, rd) = \"csrrw \" ^ rd ^ \", \" ^ rs1 ^ \", \" ^ csr_name(csr)\n"
+      "CSRRS" -> "function clause print_insn CSRRS(csr, rs1, rd) = \"csrrs \" ^ rd ^ \", \" ^ rs1 ^ \", \" ^ csr_name(csr)\n"
+      "CSRRC" -> "function clause print_insn CSRRC(csr, rs1, rd) = \"csrrc \" ^ rd ^ \", \" ^ rs1 ^ \", \" ^ csr_name(csr)\n"
+
+      "CSRRWI" -> "function clause print_insn CSRRWI(csr, imm, rd) = \"csrrwi \" ^ rd ^ \", \" ^ bits_str(imm) ^ \", \" ^ csr_name(csr)\n"
+      "CSRRSI" -> "function clause print_insn CSRRSI(csr, imm, rd) = \"csrrsi \" ^ rd ^ \", \" ^ bits_str(imm) ^ \", \" ^ csr_name(csr)\n"
+      "CSRRCI" -> "function clause print_insn CSRRCI(csr, imm, rd) = \"csrrci \" ^ rd ^ \", \" ^ bits_str(imm) ^ \", \" ^ csr_name(csr)\n"
+
       _      -> mempty
 
 genPrintInsnBody (lowerName -> nam) ty = start <> " ^ " <> body

@@ -69,6 +69,24 @@ bitfield misa_t : bits(32) = {
 register __csr_misa : misa_t
 
 /* -------------------------------------------------------------------------- */
+/* -- CSR Name Mapping ------------------------------------------------------ */
+
+val csr_name : csregno -> string effect pure
+function csr_name (mode : bits(2) @ priv : bits(2) @ regno : bits(8)) =
+  match (csr_mode_bits(mode), csr_priv_bits(priv), regno) {
+    (CSR_MODE_READONLY(), CSR_PRIV_USER(), 0x00) => "cycle",
+    (CSR_MODE_READONLY(), CSR_PRIV_USER(), 0x80) => "cycleh",
+
+    (CSR_MODE_READONLY(), CSR_PRIV_USER(), 0x01) => "time",
+    (CSR_MODE_READONLY(), CSR_PRIV_USER(), 0x81) => "timeh",
+
+    (CSR_MODE_READONLY(), CSR_PRIV_USER(), 0x02) => "instret",
+    (CSR_MODE_READONLY(), CSR_PRIV_USER(), 0x82) => "instreth",
+
+    _ => "UNKNOWN"
+  }
+
+/* -------------------------------------------------------------------------- */
 /* -- Read/Write ops -------------------------------------------------------- */
 
 val __CSR_read : csregno -> csreg_t effect { escape, rreg }
