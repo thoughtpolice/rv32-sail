@@ -39,6 +39,10 @@ val "write_ram" : forall 'n 'm.
 val "read_ram" : forall 'n 'm.
   (atom('m), atom('n), bits('m), bits('m)) -> bits(8 * 'n) effect { rmem }
 
+val "reg_deref" : forall ('a : Type). register('a) -> 'a effect {rreg}
+/* sneaky deref with no effect necessary for bitfield writes */
+val _reg_deref = "reg_deref" : forall ('a : Type). register('a) -> 'a
+
 // -- vectors
 
 val shiftleft_int = "shiftl" : forall 'n ('ord : Order).
