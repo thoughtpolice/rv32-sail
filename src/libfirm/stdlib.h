@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#ifndef __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -13,7 +13,7 @@ extern "C" {
 __attribute__((noreturn)) void abort(void);
 __attribute__((noreturn)) void exit(int status);
 
-#ifndef __cplusplus
+#ifdef __cplusplus
 } /* extern "C" */
 #endif
 

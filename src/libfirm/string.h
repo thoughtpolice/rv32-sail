@@ -1,13 +1,16 @@
 #ifndef __LIBFIRM_STRING_H__
 #define __LIBFIRM_STRING_H__
 
-#ifndef __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-void *mempcy(void *dest, const void *src, size_t n);
+char *strcpy(char *dest, const char *src);
+char *strncpy(char *dst, const char *src, size_t n);
+int strcmp(const char *s1, const char *s2);
+void *memcpy(void *dest, const void* src, size_t n);
 
-#ifndef __cplusplus
+#ifdef __cplusplus
 } /* extern "C" */
 #endif
 
