@@ -86,14 +86,15 @@ emulatorRules = do
 rvcc :: String -> [(String, String)] -> [String] -> FilePath -> Action ()
 rvcc arch defns warns out = cc src out
   where
-    src = dropDirectory1 (dropExtension out)
+    src    = dropDirectory1 (dropExtension out)
+    srcdir = dropFileName src
     cc  = cc' defaultCcParams
       { ccChoice = GCC, ccPrefix = HostPrefix "riscv32-unknown-elf-"
       , ccMarch  = Just arch, ccLang = C11, ccOpt = Size
       , ccWarnings = warns
       , ccDefines = defns
       , ccFreestanding = True
-      , ccIncPaths = [ System "src/libfirm" ]
+      , ccIncPaths = [ Base srcdir, System "src/libfirm" ]
       }
 
 rvld :: String -> FilePath -> [FilePath] -> Action ()
