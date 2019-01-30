@@ -24,7 +24,7 @@ Original Author: Shay Gal-on
 // note(aseipp): fix these here for simplicity
 #define PERFORMANCE_RUN 1
 #define ITERATIONS 20
-#define FLAGS_STR "-O2 -DPERFORMANCE_RUN=1 -DITERATIONS=20"
+#define FLAGS_STR "-Os -DPERFORMANCE_RUN=1 -DITERATIONS=20"
 
 /************************/
 /* Data types and settings */
@@ -68,7 +68,7 @@ Original Author: Shay Gal-on
 */
 #ifndef COMPILER_VERSION 
  #ifdef __GNUC__
- #define COMPILER_VERSION "GCC"__VERSION__
+ #define COMPILER_VERSION "GCC "__VERSION__
  #else
  #define COMPILER_VERSION "Please put compiler version here (e.g. gcc 4.1)"
  #endif
