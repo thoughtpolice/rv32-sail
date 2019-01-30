@@ -8,6 +8,7 @@
 
 register configuration __cfg_disassembleOps : bool = false
 register configuration __cfg_dumpStatsCycleRate : int = 10000000
+register configuration __cfg_printDebugInfo : bool = false
 
 register configuration __cfg_enableExtensionM : bool = true
 register configuration __cfg_enableExtensionA : bool = false
@@ -17,6 +18,9 @@ register configuration __cfg_enableExtensionC : bool = false
 
 val __CfgDisassembleOps : bool -> unit effect { configuration }
 function __CfgDisassembleOps enabled = { __cfg_disassembleOps = enabled }
+
+val __CfgPrintDebugInfo : bool -> unit effect { configuration }
+function __CfgPrintDebugInfo enabled = { __cfg_printDebugInfo = enabled }
 
 val __CfgExtensionM : bool -> unit effect { configuration }
 function __CfgExtensionM enabled = { __cfg_enableExtensionM = enabled }
@@ -50,6 +54,7 @@ function __PrintConfig (cfg, ty, value, desc) = {
 
 function __ListConfig () = {
   prerr_ln("");
+  __PrintConfig("debug.print_info", "boolean", "FALSE", Some("Print out some basic debugging information at boot time/shutdown"));
   __PrintConfig("debug.disasm_ops", "boolean", "FALSE", Some("Disassemble fetched/executed opcodes"));
   __PrintConfig("debug.stat_dump_rate", "integer", "10000000", Some("How often (in cycles) to dump emulator info. Only in effect when (verbosity & 0b1)"));
 
@@ -64,6 +69,9 @@ function __ListConfig () = {
 
 function __SetConfig (arg, value) = {
   match () {
+    () if arg == "debug.print_info" => {
+      __CfgPrintDebugInfo(value == 1);
+    },
     () if arg == "debug.disasm_ops" => {
       __CfgDisassembleOps(value == 1);
     },

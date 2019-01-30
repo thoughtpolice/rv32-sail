@@ -9,6 +9,12 @@
 /* -- Basic register that keeps track of the instruction count -- */
 register InstrCount : int
 
+val prdbg : string -> unit
+function prdbg s = if __cfg_printDebugInfo then { prerr(s) }
+
+val prdbg_ln : string -> unit
+function prdbg_ln s = prdbg("[Sail] " ^ s ^ "\n")
+
 /* -------------------------------------------------------------------------- */
 /* -- Fetch driver ---------------------------------------------------------- */
 
@@ -72,7 +78,7 @@ function elf_fetch () = {
   };
 
   if (__cfg_disassembleOps) then {
-    prerr_ln("[Sail] Fetch - " ^ bits_str(PC) ^ ": " ^ instr);
+    prdbg_ln("Fetch - " ^ bits_str(PC) ^ ": " ^ instr);
   };
 
   instr
@@ -90,7 +96,7 @@ function elf_fetch () = {
 val elf_execute : ast -> bool effect { escape, wmem, rmem, wreg, rreg }
 function elf_execute ast = match ast {
   EBREAK() => {
-    prerr_ln("[Sail] Trap (EBREAK) encountered - exiting");
+    prdbg_ln("Trap (EBREAK) encountered - exiting");
     false
   },
   instr => {
@@ -140,10 +146,9 @@ function print_stats(start_time) = {
   inst_1e9 = InstrCount * 1000000000;
   ips = inst_1e9 / elapsed;
 
-  print_int("[Sail] Executed Instructions: ", InstrCount);
-  print_int("[Sail] Nanoseconds Elapsed:   ", elapsed);
-  print_int("[Sail] Approximate IPS:       ", ips);
-  ()
+  prdbg_ln("Executed Instructions: " ^ dec_str(InstrCount));
+  prdbg_ln("Nanoseconds Elapsed:   " ^ dec_str(elapsed));
+  prdbg_ln("Approximate IPS:       " ^ dec_str(ips));
 }
 
 /*
@@ -154,7 +159,7 @@ function print_stats(start_time) = {
 val dump_info : (bool, int) -> unit effect { rreg }
 function dump_info(verbose, start_time) = {
   if (mod(InstrCount, __cfg_dumpStatsCycleRate) == 0) & verbose then {
-    print_ln("");
+    prdbg("\n");
     print_stats(start_time);
   };
 }
@@ -164,16 +169,16 @@ function dump_info(verbose, start_time) = {
 */
 val print_regs : unit -> unit effect { rreg }
 function print_regs () = {
-  prerr_ln("[Sail] Register dump:");
+  prdbg_ln("Register dump:");
 
   foreach (i from 0 to 31) {
     let idx = to_bits(5, i);
     let r = if (idx == 0) then "x0" else gp_regbits_to_string(idx);
     let v = X(idx);
-    prerr(r ^ ":\t" ^ bits_str(v) ^ " ");
-    if (mod(i, 4) == 3) then { prerr("\n"); }
+    prdbg(r ^ ":\t" ^ bits_str(v) ^ " ");
+    if (mod(i, 4) == 3) then { prdbg("\n"); }
   };
-  prerr_ln("")
+  prdbg("\n")
 }
 
 /*
@@ -190,8 +195,8 @@ function main() = {
   let start_time = get_time_ns();
 
   initialize_regs(to_bits(32, elf_pc));
-  print_ln("[Sail] ELF Initial PC: " ^ hex_str(elf_pc));
-  print_ln("[Sail] Executing reset vector...");
+  prdbg_ln("ELF Initial PC: " ^ hex_str(elf_pc));
+  prdbg_ln("Executing reset vector...");
 
   try {
     while (churn ()) do { dump_info(verbose0, start_time) };
@@ -205,7 +210,7 @@ function main() = {
     EImpossible(i)        => { prerr_ln("[Sail] IMPOSSIBLE ERROR (GHOSTS IN THE SHELL): " ^ i) }
   };
 
-  print_ln("[Sail] Finished!");
+  prdbg_ln("Finished!");
   print_regs();
   print_stats(start_time);
 }
