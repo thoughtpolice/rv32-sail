@@ -85,6 +85,9 @@ function get_verbosity () = 0x0000000000000000
 val "cycle_limit_reached" : unit -> bool
 function cycle_limit_reached () = false
 
+val get_cycle_count = { c: "get_cycle_count" } : unit -> int
+function get_cycle_count () = 0
+
 val "get_time_ns" : unit -> int
 
 val elf_entry = {
