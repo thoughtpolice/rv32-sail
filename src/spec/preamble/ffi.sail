@@ -55,6 +55,7 @@ val sub_vec = {c: "sub_bits", _: "sub_vec"} : forall 'n. (bits('n), bits('n)) ->
 val xor_vec = {c: "xor_bits", _: "xor_vec"} : forall 'n. (bits('n), bits('n)) -> bits('n)
 val and_vec = {c: "and_bits", _: "and_vec"} : forall 'n. (bits('n), bits('n)) -> bits('n)
 val or_vec  = {c: "or_bits",  _: "or_vec"}  : forall 'n. (bits('n), bits('n)) -> bits('n)
+val not_vec = {c: "not_bits", _: "not_vec"} : forall 'n. bits('n) -> bits('n)
 
 val add_vec_int = {c: "add_bits_int",  _: "add_vec_int"} : forall 'n. (bits('n), bits('n)) -> bits('n)
 val sub_vec_int = {c: "sub_bits_int",  _: "sub_vec_int"} : forall 'n. (bits('n), bits('n)) -> bits('n)

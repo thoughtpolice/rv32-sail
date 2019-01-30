@@ -26,5 +26,7 @@ overload operator %  = { mod_int, mod, modulus }
 overload operator << = { shiftleft_int,  shiftleft_bits }
 overload operator >> = { shiftright_int, shiftright_bits }
 
+overload ~  = { not_bool, not_vec }
+
 /* -------------------------------------------------------------------------- */
 /* -- El Fin (preamble/operators.sail) -------------------------------------- */
