@@ -12,7 +12,7 @@ overload operator == = { eq_string, eq_real, eq_unit, eq_bit, eq_bits, eq_int, e
 overload operator != = { neq_int, neq_bool }
 overload operator &  = { and_vec }
 overload operator |  = { or_vec }
-overload operator ^  = { xor_vec, int_power, real_power, string_append }
+overload operator ^  = { xor_vec, int_power, real_power, string_append, bitvector_concat }
 overload operator +  = { add_int, add_vec, add_vec_int, add_real }
 overload operator -  = { sub_int, sub_vec, sub_vec_int, sub_real }
 overload operator *  = { mult_atom, mult_int, mult_real }
