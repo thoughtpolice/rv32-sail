@@ -1,0 +1,10 @@
+Originally taken from the Apache 2.0 Licensed [[https://github.com/eembc/coremark/][CoreMark repository]]. The
+~core_portme~ files were based originally on the ~barebones~ example from the
+source code with minor modifications for RISC-V.
+
+This port should be considered *EXPERIMENTAL* and *INCOMPLETE*, and *IS NOT*
+representative of any real performance metrics of any RISC-V core, and *MUST
+NOT* be used in any representative benchmark.
+
+CoreMark is a registered trademark of EEMBC. See the primary ~COPYING~ file of
+this project for the licensing terms of CoreMark.

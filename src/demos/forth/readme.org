@@ -1,0 +1,26 @@
+An incomplete FORTH implementation for RISC-V I wrote a few years ago. You
+cannot write actual FORTH words syntactically, with a compiler and word support,
+but you *can* write micro-coded operations pretty easily in assembly language,
+with some abstract macro support (check out the ~PROTOMAIN~ word in ~hf.S.in~)
+
+Originally targeted for the HiFive1 and SPIKE RISC-V simulator, and now running
+on top of Sail!
+
+-----
+
+Notably, the old C++ compiler which could generate basic word definitions from
+the "proto.f" prelude isn't here. It was horrible and originally written in C++
+to keep the build process austere so users could easily play around; the build
+system of this project means we can be more liberal and write a compiler in
+Haskell, which is the inevitable goal of ~pc.hs~ ("protoforth compiler").
+
+The intention is that the protoforth compiler only bootstraps some basic words
+to implement the real FORTH compiler loop. It compiles a limited subset of words
+to assembler syntax, which is merged with ~hf.S.in~ to create the full compiler
+-- it's essentially a simpler way to a larger amount of primitives using a more
+reasonable FORTH syntax, with only the most fundamental operations being
+microcoded, through a bootstrap. This is in contrast to JonesForth, which
+microcoded the entire compiler and standard library.
+
+The build process currently *does* actually run the protoforth compiler but it,
+of course, does nothing. So if you're daring, feel free to try and complete it!

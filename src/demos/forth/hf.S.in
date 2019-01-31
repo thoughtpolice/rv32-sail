@@ -19,33 +19,11 @@
   //
   // Lorem ipsum... (TODO FIXME)
   //
-  // ------------ Board support ------------
-  //
-  // Currently, hiForth supports multiple RISC-V implementations, including
-  // real hardware, FPGA cores and software simulation. The supported
-  // RISC-V implementations are:
-  //
-  //   - RISC-V ISA Simulator ("Spike simulator") for RV32IMAC.
-  //   - SiFive HiFive1 Freedom E310 (RV32IMAC, 320MHz). "Rocket" RTL core.
-  //   - picorv32/RV32IMC RTL core on the Lattice iCE40 HX8K Breakout Board.
-  //
-  // In particular, the picorv32 IMC softcore configuration on the iCE40 FPGA
-  // series yields a completely open-source hardware FORTH implementation.
-  // This includes RTL synthesis, RTL simulation, verification, testing,
-  // place-and-route, upload, and hiForth itself. (A similar softcore build
-  // based on the Rocket RTL core could be constructed, but could not fit
-  // on the size-constrained iCE40 series, which picorv32 is optimized for.)
-  //
-  // For active development: the Spike simulator yields good performance and
-  // accuracy, comes with a full toolchain, and is recommended.
-  //
-  // See the associated hiForth README.md for information on compiling for a
-  // specific board/configuration.
 
 /// Changelog:
 
-  // 20170106 -- Initial prototype
-  // 20190130 -- New version for Sail emulation.
+  // 20170106 -- Initial private prototype for HiFive1
+  // 20190130 -- New version for rv32-sail
 
 /// Known bugs:
 

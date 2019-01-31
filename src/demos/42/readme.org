@@ -1,0 +1,2 @@
+Simple program that just returns ~42~ from ~main()~. On emulator exit, this
+should be the return value of the simulator (register ~a0~).
