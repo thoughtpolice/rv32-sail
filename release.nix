@@ -99,6 +99,13 @@ let
 
 
   jobs = rec {
+    rv32-version =
+      # Export a usable shell environment. Hack: touch $out so
+      # that nix-build works.
+      pkgs.runCommand "rv32-version" { inherit version; } ''
+        echo "${version}" > $out
+      '';
+
     cache-deps =
 
       # This is a little hack that allows you to build this target in order to
