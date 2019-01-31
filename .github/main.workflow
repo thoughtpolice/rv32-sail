@@ -1,6 +1,6 @@
 workflow "Build and Publish" {
   on = "push"
-  resolves = ["Nix Docker Build"]
+  resolves = ["Push to Docker Hub"]
 }
 
 action "Shell Lint" {
@@ -17,4 +17,17 @@ action "Nix Docker Build" {
   uses = "./.github/actions/nix-build"
   needs = ["Shell Lint", "Docker Lint"]
   args = "release.nix docker image.tar.gz"
+}
+
+action "Publish Filter" {
+  uses = "actions/bin/filter@master"
+  needs = ["Nix Docker Build"]
+  args = "branch master"
+}
+
+action "Push to Docker Hub" {
+  uses = "./.github/actions/skopeo"
+  needs = ["Publish Filter"]
+  args = "image.tar.gz docker://thoughtpolice/rv32-sail --no-latest"
+  secrets = ["SKOPEO_DEST_PASS", "SKOPEO_DEST_USER"]
 }
