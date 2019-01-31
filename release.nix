@@ -175,6 +175,26 @@ let
     };
 
     /*
+    ** Derivation to build all the firmware demos and then keep them in a
+    ** derivation by themselves. This is mostly useful for the Docker image so
+    ** that it can package the firmware with the small executables.
+    */
+    firmware-demos = pkgs.stdenv.mkDerivation {
+      name = "rv32-firmware-${version}";
+      inherit version;
+
+      src = lib.cleanSource ./.;
+      buildInputs = buildInputs ++ [ bake ];
+
+      buildPhase = "bake --lint --no-color --verbose -j$NIX_BUILD_CORES demos tests";
+      installPhase = ''
+        mkdir -p $out/share/rv32-sail
+        cp -R build/demos/*.elf $out/share/rv32-sail
+        cp -R build/t/*.elf $out/share/rv32-sail
+      '';
+    };
+
+    /*
     ** Derivation that builds a statically linked copy of the C source
     ** code using Musl, in order to distribute binaries for any resulting
     ** users or other systems without Nix.
@@ -195,6 +215,22 @@ let
         buildPhase = "cc -O2 -o cruise *.c -lgmp -lz";
         installPhase = "install -m0755 -D -t $out/bin ./cruise";
       };
+
+    /*
+    ** Derivation that builds a Docker image that can be run with ease, using
+    ** musl to keep the closure size smaller.
+    */
+    docker = pkgs.dockerTools.buildLayeredImage {
+      name = "rv32-sail";
+      tag = "latest";
+
+      contents = [ emulator-static firmware-demos ];
+      config = {
+        Entrypoint = [ "/bin/cruise" ];
+        Cmd        = [ "--help" ];
+        WorkingDir = "/share/rv32-sail";
+      };
+    };
 
   }; /* jobs */
 
