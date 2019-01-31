@@ -48,9 +48,6 @@ let
 
   haskellInputs = pkgs.haskell.packages."${ghc}".ghcWithPackages (p: with p;
     [ shake
-      ghc-typelits-extra
-      ghc-typelits-natnormalise
-      ghc-typelits-knownnat
     ]);
 
   # Write out a stupid wrapper for 'runghc' which sets the include path to
