@@ -95,22 +95,39 @@ let
     ;
 
   # Serialize the list of buildInputs as a big string containing all the paths.
-  depPaths = lib.concatStringsSep " " buildInputs;
+  allDeps = [ runBakeWrapper runGhcWrapper ] ++ buildInputs;
+
 
   jobs = rec {
-    shell =
-      let deps = [ runBakeWrapper runGhcWrapper ] ++ buildInputs;
-      # Export a usable shell environment. This also includes a little hack that
-      # allows you to run 'nix-build shell.nix' in order to get a store path that
-      # has the list of buildInputs as strict dependencies, so you can copy the
-      # resulting closure around to other machines or places.
-      in pkgs.runCommand "sail-shell" { buildInputs = deps; } ''
-        mkdir -p $out/nix-support/
-        touch $out/nix-support/propagated-build-inputs
+    cache-deps =
 
+      # This is a little hack that allows you to build this target in order to
+      # get a store path that has the list of buildInputs as strict
+      # dependencies, so you can copy the resulting closure around to other
+      # machines or places, e.g.
+      #
+      #   cat $(nix-build -Q --no-link release.nix -A cache-deps)
+      #
+      # Static dependencies are only included in the depPath; these won't be
+      # included by default when you run nix-shell, but will be when this
+      # target is run.
+      let staticDeps = with pkgs.pkgsMusl;
+            [ stdenv stdenv.bootstrapTools binutils gmp.dev gmp zlib.dev zlib
+            ];
+          depPaths = lib.concatStringsSep " " (allDeps ++ staticDeps);
+      in pkgs.runCommand "cache-deps" {} ''
+        touch $out
         for x in ${depPaths}; do
-          echo "$x" >> $out/nix-support/propagated-build-inputs
+          echo "$x" >> $out
         done
+      '';
+
+    shell =
+      # Export a usable shell environment. Hack: touch $out so
+      # that nix-build works.
+      pkgs.runCommand "sail-shell" { buildInputs = allDeps; } ''
+        mkdir -p $out/nix-support/
+        touch $out/nix-support/shell
       '';
 
     bake = pkgs.stdenv.mkDerivation {
