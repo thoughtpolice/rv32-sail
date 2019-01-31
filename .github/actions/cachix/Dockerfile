@@ -8,8 +8,8 @@ LABEL maintainer="Austin Seipp <aseipp@pobox.com>"
 
 LABEL "com.github.actions.name"="Cachix Push"
 LABEL "com.github.actions.description"="Pushes a store into the cache"
-LABEL "com.github.actions.icon"="cpu"
-LABEL "com.github.actions.color"="purple"
+LABEL "com.github.actions.icon"="database"
+LABEL "com.github.actions.color"="blue"
 
 RUN nix-env -iA nixpkgs.gnutar nixpkgs.gzip && \
   nix-env -iA cachix -f https://cachix.org/api/v1/install
