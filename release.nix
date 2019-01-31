@@ -147,6 +147,27 @@ let
       '';
     };
 
+    /*
+    ** Derivation to build all the firmware demos and then keep them in a
+    ** derivation by themselves. This is mostly useful for running the
+    ** checkPhases between the static/glibc emulator builds and sharing the
+    ** builds, as well as Docker containers that contain the firmware for fun.
+    */
+    firmware-demos = pkgs.stdenv.mkDerivation {
+      name = "rv32-firmware-${version}";
+      inherit version;
+
+      src = lib.cleanSource ./.;
+      buildInputs = buildInputs ++ [ bake ];
+
+      buildPhase = "bake --lint --no-color --verbose -j$NIX_BUILD_CORES demos tests";
+      installPhase = ''
+        mkdir -p $out/share/rv32-sail
+        cp -R build/demos/*.elf $out/share/rv32-sail
+        cp -R build/t/*.elf $out/share/rv32-sail
+      '';
+    };
+
     /* This only builds the emulator, it doesn't actually build any firmware,
     ** etc.
     */
@@ -156,10 +177,18 @@ let
 
       src = lib.cleanSource ./.;
       buildInputs = buildInputs ++ [ bake ];
+      doCheck = true;
 
       buildPhase =
         let targets = lib.concatStringsSep " " [ "build/cruise" "build/cruise.ref" ];
         in "bake --lint --no-color --verbose -j$NIX_BUILD_CORES ${targets}";
+
+      checkPhase = ''
+        for x in $(find ${firmware-demos}/share -type f -iname '*.elf'); do
+          echo "TEST:" $(basename "$x")
+          ./build/cruise -e "$x";
+        done
+      '';
 
       installPhase = ''
         install -m0755 -D -t $out/bin ./build/cruise{,.ref}
@@ -189,26 +218,6 @@ let
     };
 
     /*
-    ** Derivation to build all the firmware demos and then keep them in a
-    ** derivation by themselves. This is mostly useful for the Docker image so
-    ** that it can package the firmware with the small executables.
-    */
-    firmware-demos = pkgs.stdenv.mkDerivation {
-      name = "rv32-firmware-${version}";
-      inherit version;
-
-      src = lib.cleanSource ./.;
-      buildInputs = buildInputs ++ [ bake ];
-
-      buildPhase = "bake --lint --no-color --verbose -j$NIX_BUILD_CORES demos tests";
-      installPhase = ''
-        mkdir -p $out/share/rv32-sail
-        cp -R build/demos/*.elf $out/share/rv32-sail
-        cp -R build/t/*.elf $out/share/rv32-sail
-      '';
-    };
-
-    /*
     ** Derivation that builds a statically linked copy of the C source
     ** code using Musl, in order to distribute binaries for any resulting
     ** users or other systems without Nix.
@@ -225,9 +234,17 @@ let
 
         src = emulator-csrc;
         buildInputs = [ ps.gmp ps.zlib ];
+        doCheck = true;
 
         buildPhase = "cc -O2 -o cruise *.c -lgmp -lz";
         installPhase = "install -m0755 -D -t $out/bin ./cruise";
+
+        checkPhase = ''
+          for x in $(find ${firmware-demos}/share -type f -iname '*.elf'); do
+            echo "TEST:" $(basename "$x")
+            ./cruise -e "$x";
+          done
+        '';
       };
 
     /*
