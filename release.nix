@@ -145,7 +145,7 @@ let
 
       buildPhase =
         let targets = lib.concatStringsSep " " [ "build/cruise" "build/cruise.ref" ];
-        in "bake --no-color --verbose -j$NIX_BUILD_CORES ${targets}";
+        in "bake --lint --no-color --verbose -j$NIX_BUILD_CORES ${targets}";
 
       installPhase = ''
         install -m0755 -D -t $out/bin ./build/cruise{,.ref}
@@ -166,7 +166,7 @@ let
 
       buildPhase =
         let targets = lib.concatStringsSep " " [ "build/cruise.c" ];
-        in "bake --no-color --verbose -j$NIX_BUILD_CORES ${targets}";
+        in "bake --lint --no-color --verbose -j$NIX_BUILD_CORES ${targets}";
 
       installPhase = ''
         mkdir -p $out
