@@ -2,3 +2,60 @@ Creator, primary target of blame:
 
   Austin Seipp <aseipp@pobox.com>
 
+-----
+
+Many other projects were used as references, code sources, inspiration and more,
+making attribution complicated. Some of these include:
+
+  - Sail, the programming language for describing processor ISAs:
+    https://github.com/rems-project/sail/
+
+    The source code to Sail was invaluable in discovering features and various
+    capabilities of the toolchain.
+
+  - Sail CHERI-MIPS, a capability-secure MIPS variant:
+    https://github.com/CTSRD-CHERI/sail-cheri-mips/
+
+    The CHERI-MIPS model was invaluable in discovering features and various ways
+    to structure and organize code.
+
+  - Sail RISC-V, a full RV64IMAC implementation with U/S/M modes:
+    https://github.com/rems-project/sail-riscv/
+
+    The Sail RISC-V model was invaluable in discovering features, resolving and
+    understanding ambiguties/unclear details in the ISA/Privileged RISC-V
+    specifications, and as an implementation reference. Some of the code for the
+    execute pipeline was modeled closely based on the Sail RISC-V model
+    implementation (though, all implementations would essentially have the same
+    fundamentals).
+
+  - Sail ARMv8.5, a full model of the complete ARMv8.5 ISA:
+    https://github.com/rems-project/sail-arm/
+
+    The Sail ARMv8.5 model was invaluable in understanding features and proving
+    that Sail can handle large, real-world systems like Linux.
+
+All of these various Sail projects are released under the terms of the 2-clause
+BSD license and part of the REMS Project, with the exception of the ARM 8.5
+model (resp. BSD-3, ARM Research), and copyright The Universities of Cambridge
+and Edinburgh (resp ARM Ltd.)
+
+Some code, including the test firmware, Dhrystone Benchmark (with RISC-V
+modifications), and some of the reset vector/boot shim code, was taken from
+PicoRV32, primarily authored by Clifford Wolf. It was available under the ISC
+and Public Domain licenses. Dhrystone was originally created by Reinhold P.
+Weicker.
+
+RISC-V assembly tests were taken from the canonical "RISCV Tests" project, part
+of the umbrella of RISC-V Foundation Projects. It was created by various authors
+and available under a 3-clause BSD-like license.
+
+The RISC-V FORTH implementation, which was authored by Austin Seipp, was
+inspired by the design and implementation of JonesForth, a public domain FORTH
+implementation for i386/Linux by Richard W.M. Jones. It has been made available
+under the terms of this project (the MIT license).
+
+CoreMark is a CPU benchmarking project by the non-profit Embedded Microprocessor
+Benchmark Consortium (EEMBC). It was previously under a more restrictive
+license, but is now open source under the terms of the Apache 2.0 License.
+(CoreMark is a registered trademark of EEMBC).

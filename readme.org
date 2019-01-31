@@ -31,6 +31,8 @@ equivalent of ~rv32-sail~, try [[https://github.com/cliffordwolf/picorv32][picor
   - High-level, type-safe, functional-imperative description of RISC-V.
   - Part hand-written (execution engine), part generated (decoder) at
     compile time.
+  - Implements all of the base RV32IM instruction set as well as a select
+    amount of CSRs. Machine (M) mode only, no User (U) mode support (yet).
 - Robust build system, toolchain, programming environment.
   - Global dependencies (GCC, Haskell, Sail) are provided with *[[https://nixos.org/nix][Nix]]*,
     so every dependency is taken care of for you, *on almost any Linux
@@ -53,7 +55,8 @@ equivalent of ~rv32-sail~, try [[https://github.com/cliffordwolf/picorv32][picor
     for C programming, including basic standard headers, library functions etc.
   - Loads raw ELF binaries that can be booted and executed directly.
 - Included demo code
-  - Full test firmware based on [[https://github.com/cliffordwolf/picorv32][picorv32]] firmware for end-to-end testing.
+  - Full test firmware based on [[https://github.com/cliffordwolf/picorv32][picorv32]] firmware, and upstream RISC-V assembly
+    tests, for basic verification.
   - Benchmarks: both [[https://en.wikipedia.org/wiki/Dhrystone][Dhrystone]] and [[https://www.eembc.org/coremark/][CoreMark]] are built by default.
   - Fun: a full prototype FORTH implementation, based on JonesForth
 
@@ -122,7 +125,9 @@ $ sh <(https://nixos.org/nix/install) --daemon
 actual installation script inside, and you can find [[https://github.com/NixOS/nix/tree/master/scripts][the source code for those
 scripts]] as well.)
 
-*You must pass the ~--daemon~ flag to the installer!*
+*You must pass the --daemon flag to the installer!* (If you don't, you will not
+have sandboxing support enabled in Nix, which could lead to non-reproducible
+builds, and other strange build failures.)
 
 This should work on any modern Linux distribution with namespace support and
 systemd as the init system. Then you can log back into your user account --
@@ -471,8 +476,14 @@ dependencies. Stay tuned for that.
 
 * Authors
 
-See [[https://raw.githubusercontent.com/thoughtpolice/rv32-sail/master/AUTHORS.txt][AUTHORS.txt]] for the list of contributors to the project.
+~rv32-sail~ is the result of many pieces of code being stitched together, both
+my own, and others. There are many various people and projects who have
+contributed to its birth. See [[https://raw.githubusercontent.com/thoughtpolice/rv32-sail/master/AUTHORS.txt][AUTHORS.txt]] for the list of contributors to the
+project and some notes on who was responsible.
 
 * License
 
-MIT. See [[https://raw.githubusercontent.com/thoughtpolice/rv32-sail/master/COPYING][COPYING]] for precise terms of copyright and redistribution.
+MIT, but, as noted, much of the code is authored by others and, thus, available
+under various terms. (Almost all of these being extremely free non-copyleft
+licenses, including ASL2.0, BSD3, MIT, ISC, and Public Domain.) See [[https://raw.githubusercontent.com/thoughtpolice/rv32-sail/master/COPYING][COPYING]] for
+precise terms of copyright and redistribution.
