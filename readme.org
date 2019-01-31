@@ -75,6 +75,9 @@ ESP32.)
 * Table of Contents :TOC_4_gh:
 - [[#rv32-sail---high-level-emulator-for-rv32imac-core-][rv32-sail - high-level emulator for RV32IMAC core 🔥]]
 - [[#features][Features]]
+- [[#quickstart][Quickstart]]
+  - [[#quickstart-docker][QuickStart: Docker]]
+  - [[#quickstart-nix][QuickStart: Nix]]
 - [[#building][Building]]
 - [[#usage][Usage]]
   - [[#running-demos-and-tests][Running demos and tests]]
@@ -103,6 +106,39 @@ ESP32.)
   - [[#building-gcc-takes-a-while-can-i-skip-that][Building GCC takes a while, can I skip that?]]
 - [[#authors][Authors]]
 - [[#license][License]]
+
+* Quickstart
+
+If you just want to try out the emulator and the demos at no cost, there are
+easy ways to do it: Docker and a [[https://nixos.org][Nix]] Cache.
+
+** QuickStart: Docker
+
+There's a *Docker Container* that's automatically compiled and built (using
+[[https://github.com/features/actions][GitHub Actions]]) on every commit to the main branches. You can try the emulator
+immediately by running one of the included demos:
+
+#+BEGIN_SRC language
+docker run --rm thoughtpolice/rv32-sail:master -e smoke.elf
+docker run --rm thoughtpolice/rv32-sail:master -e dhrystone.elf
+#+END_SRC
+
+All of the demos in the package (Dhrystone, CoreMark, etc), as well as the smoke
+test firmware (~smoke.elf~) are included in the Docker container.
+
+#+BEGIN_QUOTE
+
+Note: The ~:master~ tag for the Docker repository is always updated when the
+~master~ branch is, etc etc. There is also a tag corresponding to every git
+commit, and the Nix package version (e.g. ~1.0~ or ~1.0pre_...~)
+
+The ~:latest~ tag is reserved for stable releases -- there are no stable
+releases as of now.
+#+END_QUOTE
+
+** QuickStart: Nix
+
+*TODO FIXME*: Describe using Cachix to download the binaries and run them.
 
 * Building
 
@@ -138,9 +174,10 @@ the emulator and test firmware, too.
 #+END_QUOTE
 
 Currently, the primary way to compile the emulator and firmware is to use the
-build system is by simply invoking it directly using the ~bake.hs~ script. If
-you have Nix installed, this will essentially "just work" -- though the first
-invocation will take some time (see below).
+build system is by simply invoking it directly using the ~bake.hs~ script. This
+is designed to be as easy as possible. If you have a recent version of Nix
+installed, this will essentially "just work" -- though the first invocation will
+take some time (see below).
 
 #+BEGIN_SRC bash
 $ git clone https://github.com/thoughtpolice/rv32-sail
