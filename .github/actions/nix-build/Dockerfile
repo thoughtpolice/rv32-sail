@@ -13,7 +13,10 @@ LABEL "com.github.actions.color"="purple"
 
 RUN nix-env -iA \
   nixpkgs.gnutar nixpkgs.gzip \
-  nixpkgs.git
+  nixpkgs.git && \
+  mkdir -p /etc/nix && \
+  (echo "binary-caches = https://cache.nixos.org/ https://aseipp.cachix.org/" | tee -a /etc/nix/nix.conf) && \
+  (echo "trusted-public-keys = aseipp.cachix.org-1:UaUH2DczaM7ytMZlyuHtpYq8FAziIQnjmGMaB45rvRw= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" | tee -a /etc/nix/nix.conf)
 
 ENTRYPOINT [ "nix-build" ]
 CMD [ "--help" ]
