@@ -56,5 +56,5 @@ echo using "$(skopeo --version)"
 echo using tags: "$(for x in "${alltags[@]}"; do echo -n "$x "; done)"
 
 for t in "${alltags[@]}"; do
-  echo skopeo copy --dcreds "$SKOPEO_DEST_USER:$SKOPEO_DEST_PASS" "docker-archive:$archive" "${registry}:${t}"
+  skopeo copy --dcreds "$SKOPEO_DEST_USER:$SKOPEO_DEST_PASS" "docker-archive:$archive" "${registry}:${t}"
 done
