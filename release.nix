@@ -73,6 +73,12 @@ let
 
   # -----------------------------
 
+  emscriptenDeps =
+    [ pkgs.emscripten
+      pkgs.emscriptenPackages.zlib
+      (import ./nix/emscripten.nix { inherit pkgs; }).gmp
+    ];
+
   # -----------------------------
   tools = {
     riscv-toolchain = import ./nix/riscv-gcc.nix { inherit pkgs riscv-arch; };
@@ -120,7 +126,7 @@ let
       let staticDeps = with pkgs.pkgsMusl;
             [ stdenv stdenv.bootstrapTools binutils gmp.dev gmp zlib.dev zlib
             ];
-          depPaths = lib.concatStringsSep " " (allDeps ++ staticDeps);
+          depPaths = lib.concatStringsSep " " (allDeps ++ staticDeps ++ emscriptenDeps);
       in pkgs.runCommand "cache-deps" {} ''
         touch $out
         for x in ${depPaths}; do
@@ -270,6 +276,42 @@ let
         WorkingDir = "/share/rv32-sail";
       };
     };
+
+    /*
+    ** Build a version of the emulator using WebAssembly! Currently
+    ** broken since the file I/O doesn't seem to work; might need Sail
+    ** fixes. TODO FIXME: Investigate this!
+    */
+    emulator-wasm =
+      pkgs.stdenv.mkDerivation {
+        name = "rv32-sail-wasm-${version}";
+        inherit version;
+
+        src = lib.cleanSource ./.;
+        nativeBuildInputs = [ pkgconfig ];
+        buildInputs = [ emulator-csrc ] ++ emscriptenDeps;
+        dontStrip = true;
+        dontFixup = true;
+        doCheck = false;
+
+        configurePhase = "cp ${emulator-csrc}/* .";
+        buildPhase = ''
+          HOME=$TMPDIR # please emcc
+          emcc -s WASM=1 -O2 -o cruise.html *.c \
+            $(pkg-config --cflags zlib gmp --libs zlib gmp)
+        '';
+        installPhase = ''
+          mkdir -p $out
+          cp *.html *.wasm *.js *.mem $out
+        '';
+
+        checkPhase = ''
+          for x in $(find ${firmware-demos}/share -type f -iname '*.elf'); do
+            echo "TEST:" $(basename "$x")
+            ${pkgs.nodejs}/bin/nodejs cruise.js -e "$x";
+          done
+        '';
+      };
 
   }; /* jobs */
 
