@@ -250,7 +250,7 @@ let
         buildInputs = [ ps.gmp ps.zlib ];
         doCheck = true;
 
-        buildPhase = "cc -O2 -o cruise *.c -lgmp -lz";
+        buildPhase = "cc -DHAVE_SETCONFIG -O2 -o cruise *.c -lgmp -lz";
         installPhase = "install -m0755 -D -t $out/bin ./cruise";
 
         checkPhase = ''
