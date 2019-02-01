@@ -16,7 +16,7 @@ action "Docker Lint" {
 action "Nix Docker Build" {
   uses = "./.github/actions/nix-build"
   needs = ["Shell Lint", "Docker Lint"]
-  args = "release.nix docker image.tar.gz"
+  args = "release.nix"
 }
 
 action "Publish Filter" {
@@ -28,6 +28,6 @@ action "Publish Filter" {
 action "Push to Docker Hub" {
   uses = "./.github/actions/skopeo"
   needs = ["Publish Filter"]
-  args = "image.tar.gz docker://thoughtpolice/rv32-sail --no-latest"
+  args = "docker.tar.gz docker://thoughtpolice/rv32-sail --no-latest"
   secrets = ["SKOPEO_DEST_PASS", "SKOPEO_DEST_USER"]
 }

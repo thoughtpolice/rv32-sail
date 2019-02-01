@@ -11,23 +11,18 @@ set -e
 
 # file to build (e.g. release.nix)
 file="$1"
-shift
 
-# single target to build (e.g. 'emulator' or 'docker')
-target="$1"
-shift
+[ "$file" = "" ] && echo "No .nix file to build specified!" && exit 1
+[ ! -e "$file" ] && echo "File $file not exist!" && exit 1
 
-# output file: only used when docker is the target
-outfile="$1"
+echo "Building all attrs in $file..."
+nix-build --no-link ${QUIET_ARG} "$file"
 
-# docker outputs must have a file to copy to
-if [ "$target" = "docker" ]; then
-  [ "$outfile" = "" ] && \
-    echo "docker images must have an extra argument, the filename to copy the .tar.gz to!" && \
-    exit 1
-fi
+docker=$(nix-build --no-link ${QUIET_ARG} "$file" -A "docker")
+pages=$(nix-build --no-link ${QUIET_ARG} "$file" -A "gh-pages")
 
-path=$(nix-build --no-link ${QUIET_ARG} "$file" -A "$target")
+echo "Copying Docker Tarball to docker.tar.gz..."
+cp -L "$docker" docker.tar.gz
 
-[ "$target" = "docker" ] && \
-  cp -L "$path" "$outfile"
+echo "Copying gh-pages tarball to gh-pages.tar.gz..."
+cp -L "$pages" gh-pages.tar.gz
