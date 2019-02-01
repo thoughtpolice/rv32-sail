@@ -97,7 +97,6 @@ let
   # Serialize the list of buildInputs as a big string containing all the paths.
   allDeps = [ runBakeWrapper runGhcWrapper ] ++ buildInputs;
 
-
   jobs = rec {
     rv32-version =
       # Export a usable shell environment. Hack: touch $out so
@@ -166,6 +165,8 @@ let
 
       src = lib.cleanSource ./.;
       buildInputs = buildInputs ++ [ bake ];
+      dontStrip = true;
+      dontFixup = true;
 
       buildPhase = "bake --lint --no-color --verbose -j$NIX_BUILD_CORES demos tests";
       installPhase = ''
