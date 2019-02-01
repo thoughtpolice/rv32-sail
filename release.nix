@@ -299,16 +299,19 @@ let
           mkdir -p demos
           cp ${emulator-csrc}/* .
           cp ${firmware-demos}/share/rv32-sail/*.elf demos/
+          cp ${./src/etc/wasm-shell.html} cruise.html
         '';
         buildPhase = ''
           HOME=$TMPDIR # please emcc
 
-          emcc -O2 -DHAVE_SETCONFIG -o cruise.html *.c \
+          emcc -O2 -DHAVE_SETCONFIG -o cruise.js *.c \
             -s WASM=1 \
             -s TOTAL_MEMORY=64MB \
             --preload-file demos \
-            --shell-file ${./src/etc/wasm-shell.html} \
             $(pkg-config --cflags zlib gmp --libs zlib gmp)
+
+          substituteInPlace ./cruise.html \
+            --subst-var-by RV32_VERSION '${version}'
         '';
         installPhase = ''
           mkdir -p $out

@@ -1,126 +1,280 @@
 <!doctype html>
 <html lang="en-us">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>rv32-sail RISC-V Emulation</title>
-    <style>
-      .emscripten { padding-right: 0; margin-left: auto; margin-right: auto; display: block; }
-      textarea.emscripten { font-family: monospace; width: 80%; }
-      div.emscripten { text-align: center; }
-      div.emscripten_border { border: 1px solid black; }
 
-      .spinner {
-        height: 50px;
-        width: 50px;
-        margin: 0px auto;
-        -webkit-animation: rotation .8s linear infinite;
-        -moz-animation: rotation .8s linear infinite;
-        -o-animation: rotation .8s linear infinite;
-        animation: rotation 0.8s linear infinite;
-        border-left: 10px solid rgb(0,150,240);
-        border-right: 10px solid rgb(0,150,240);
-        border-bottom: 10px solid rgb(0,150,240);
-        border-top: 10px solid rgb(100,0,200);
-        border-radius: 100%;
-        background-color: rgb(200,100,250);
-      }
-      @-webkit-keyframes rotation {
-        from {-webkit-transform: rotate(0deg);}
-        to {-webkit-transform: rotate(360deg);}
-      }
-      @-moz-keyframes rotation {
-        from {-moz-transform: rotate(0deg);}
-        to {-moz-transform: rotate(360deg);}
-      }
-      @-o-keyframes rotation {
-        from {-o-transform: rotate(0deg);}
-        to {-o-transform: rotate(360deg);}
-      }
-      @keyframes rotation {
-        from {transform: rotate(0deg);}
-        to {transform: rotate(360deg);}
-      }
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>rv32-sail RISC-V Emulation</title>
+  <style>
+    html {
+      height: 100%;
+    }
 
+    body {
+      position: absolute;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      margin: 0px;
+      padding: 0px;
+    }
+
+    #terminal {
+      display: block;
+      position: relative;
+      height: 100%;
+      width: 100%;
+      margin: 0px;
+      padding: 0px;
+    }
     </style>
-  </head>
-  <body>
-    <textarea class="emscripten" id="output" rows="40"></textarea>
-    <figure style="overflow:visible;" id="spinner"><div class="spinner"></div><center style="margin-top:0.5em"><strong>emscripten</strong></center></figure>
-    <div class="emscripten" id="status">Downloading...</div>
-    <div class="emscripten">
-      <progress value="0" max="100" id="progress" hidden=1></progress>
-    </div>
-    <script type='text/javascript'>
-      var statusElement = document.getElementById('status');
-      var progressElement = document.getElementById('progress');
-      var spinnerElement = document.getElementById('spinner');
+</head>
 
-      var Module = {
-        arguments: [ "-C", "debug.print_info=1", "-e", "demos/dhrystone.elf" ],
-        preRun: [],
-        postRun: [],
-        print: (function() {
-          var element = document.getElementById('output');
-          if (element) element.value = ''; // clear browser cache
-          return function(text) {
-            if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
-            console.log(text);
-            if (element) {
-              element.value += text + "\n";
-              element.scrollTop = element.scrollHeight; // focus on bottom
-            }
-          };
-        })(),
-        printErr: (function() {
-          var element = document.getElementById('output');
-          if (element) element.value = ''; // clear browser cache
-          return function(text) {
-            if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
-            console.log(text);
-            if (element) {
-              element.value += text + "\n";
-              element.scrollTop = element.scrollHeight; // focus on bottom
-            }
-          };
-        })(),
-        setStatus: function(text) {
-          if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
-          if (text === Module.setStatus.last.text) return;
-          var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
-          var now = Date.now();
-          if (m && now - Module.setStatus.last.time < 30) return; // if this is a progress update, skip it if too soon
-          Module.setStatus.last.time = now;
-          Module.setStatus.last.text = text;
-          if (m) {
-            text = m[1];
-            progressElement.value = parseInt(m[2])*100;
-            progressElement.max = parseInt(m[4])*100;
-            progressElement.hidden = false;
-            spinnerElement.hidden = false;
-          } else {
-            progressElement.value = null;
-            progressElement.max = null;
-            progressElement.hidden = true;
-            if (!text) spinnerElement.hidden = true;
-          }
-          statusElement.innerHTML = text;
-        },
-        totalDependencies: 0,
-        monitorRunDependencies: function(left) {
-          this.totalDependencies = Math.max(this.totalDependencies, left);
-          Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+<body>
+  <div id='terminal'></div>
+  <script type='text/javascript'>
+    const esc = `\x1b`;
+    const bel = `\x07`;
+    const clrln = `${esc}[2;K`;
+    const bullet = '\u{2022}';
+    const sgr = (...args) => `${esc}[${args.join(';')}m`;
+    const sgrRgbFg = (...args) => sgr(`38:2:${args.join(':')}`);
+    const sgrRgbBg = (...args) => sgr(`48:2:${args.join(':')}`);
+    const normal = sgr(0);
+    const bold = sgr(1);
+    const italic = sgr(3);
+    const underline = sgr(4);
+    const osc = (...args) => `${esc}]${args.join(';')}${bel}`;
+    const osc8 = (uri = '', params = '') => osc(8, params, uri);
+
+    function printPrompt(io) {
+      io.print(
+        `${bold}` +
+        `${sgrRgbFg(0x7a, 0xe9, 0x46)}rv32>` +
+        `${normal} `
+      );
+    }
+
+    var Module = {
+      arguments: ["-C", "debug.print_info=1", "-e", "demos/dhrystone.elf"],
+      noInitialRun: true,
+      totalDependencies: 0,
+      completeDownloads: 0,
+    };
+
+    var termbuf = "";
+    var errcolor = sgrRgbFg(0xee, 0xb2, 0x11);
+
+    function loadEmulator(io) {
+      io.println("Loading emulator...");
+
+      Module.print = function (text) { io.println(text); }
+      Module.printErr = function (text) { io.println(`${errcolor}${text}${normal}`); }
+
+      Module.monitorRunDependencies = function (left) {
+        this.totalDependencies = Math.max(this.totalDependencies, left);
+        io.print(`${clrln} Preparing... (` + (this.totalDependencies - left) + '/' + this.totalDependencies + ')\r');
+        if (!left) {
+          this.completeDownloads += 1;
+          io.println(`${clrln}OK: download #${this.completeDownloads} complete\r`);
         }
-      };
-      Module.setStatus('Downloading...');
-      window.onerror = function() {
-        Module.setStatus('Exception thrown, see JavaScript console');
-        spinnerElement.style.display = 'none';
-        Module.setStatus = function(text) {
-          if (text) Module.printErr('[post-exception status] ' + text);
+      }
+
+      Module.onRuntimeInitialized = function () {
+        io.println("OK: emulator load (.wasm + all data files) completed");
+        io.println('');
+
+        // Update the printErr routine again, so that it has a distinct look
+        // from load-time errors
+        errcolor = `${sgrRgbFg(0xd5, 0x0f, 0x25)}`;
+
+        const rv32Ver = '@RV32_VERSION@';
+        const htermVer = lib.resource.getData('hterm/changelog/version');
+        const date = lib.resource.getData('hterm/changelog/date');
+
+        lines = [
+          `rv32-sail: version ${bold}${rv32Ver}${normal}`,
+          `hterm: version ${bold}${htermVer}${normal} (built on ${bold}${date}${normal})`,
+          ``,
+          `There are three basic commands:`,
+          ``,
+          `  ${bullet} ${bold}${underline}ls${normal}, which lists the available demos`,
+          `  ${bullet} ${bold}${underline}run${normal} ${underline}<FILENAME>${normal} ${underline}[OPTIONS...]${normal} runs a demo, where`,
+          `    ${bullet} ${underline}<FILENAME>${normal} is the name of a demo`,
+          `    ${bullet} ${underline}[OPTIONS...]${normal} are optional arguments to pass to ${bold}rv32-sail${normal}`,
+          `  ${bullet} ${bold}${underline}clear${normal}, which clears the terminal`,
+          ``,
+          `For example: try ${bold}run dhrystone.elf -C debug.print_info=1${normal}`,
+          ``,
+          `Have fun!`,
+          ``,
+        ];
+        lines.forEach((line) => io.println(line));
+        printPrompt(io);
+      }
+
+      // load actual cruise script
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.src = 'cruise.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+
+    function initContent(io) {
+      let linkify = (uri, txt) => `${underline}${bold}${osc8(uri)}${txt}${osc8()}${normal}`;
+
+      let sailHome = linkify("https://www.cl.cam.ac.uk/~pes20/sail/", "Sail Programming Language");
+      let htermHome = linkify("https://hterm.org", "hterm terminal emulator");
+      let lines = [
+        ``,
+        `${bold}rv32-sail: a RISC-V RV32IM emulator, written in Sail${normal}`,
+        ``,
+        `${bold}rv32-sail${normal} is a full RISC-V emulator for RV32IM in machine`,
+        `(M-) mode, written using the ${sailHome}.`,
+        `This is a version of the emulator's C code, compiled to`,
+        `WebAssembly, equipped with the ${htermHome}.`,
+        ``,
+      ];
+      lines.forEach((line) => io.println(line));
+
+      const topLine = '\u{23ba}';
+      const colorTermFg = sgrRgbFg(0x7a, 0xe9, 0x46);
+      const colorTermBg = sgrRgbBg(0x10, 0x37, 0x18);
+      lines = [
+        `  .--~~~~~~~~~~~~~------.`,
+        ` /--===============------\\`,
+        ` | |${colorTermBg}${topLine.repeat(18)}${normal}|     |`,
+        ` | |${colorTermBg}               ${normal}|     |`,
+        ` | |${colorTermBg}      ${colorTermFg}>_<      ${normal}|     |`,
+        ` | |${colorTermBg}               ${normal}|     |`,
+        ` | |${colorTermBg}_______________${normal}|     |`,
+        ` |                   ::::|`,
+        ` '======================='`,
+        ` //-'-'-'-'-'-'-'-'-'-'-\\\\`,
+        `//_'_'_'_'_'_'_'_'_'_'_'_\\\\`,
+        `[-------------------------]`,
+        `\\_________________________/`,
+      ];
+      lines.forEach((line) => io.println(' '.repeat(20) + line));
+      io.println('');
+
+      let links = [
+        ['https://github.com/thoughtpolice/rv32-sail/', 'Homepage, Source Code, & Documentation'],
+        ['https://github.com/thoughtpolice/rv32-sail/issues', 'Bugs & Feature Requests'],
+        ['mailto:aseipp at pobox dot com', 'Contact'],
+      ];
+      links.forEach(([uri, text]) => io.println(`  ${bullet} ${linkify(uri, text)}`));
+      io.println('');
+    };
+
+    function processCommand(io, term, input) {
+      if (input == '') return;
+
+      var words = input.split(' ').filter(i => i); /* ignore empty '' elements */
+      var cmd = words[0];
+
+      // TODO FIXME: why doesn't smoke work?
+      var validDemos = ["42", "dhrystone", "forth"]
+        .map((f) => f + '.elf');
+
+      switch (cmd) {
+        case '': { break; }
+        case 'clear': { term.wipeContents(); break; }
+        case 'ls': { io.println(validDemos.join(' ')); break; }
+
+        case 'run': {
+          if (words.length < 2) {
+            io.println("INVALID COMMAND ARGUMENTS: 'run' must have the name of a demo!");
+            io.println("Try 'ls' to see which demos you can run.");
+            break;
+          }
+
+          var demo = words[1];
+          if (!validDemos.includes(demo)) {
+            io.println("INVALID DEMO NAME: '" + demo + "' does not exist!");
+            io.println("Try 'ls' to see which demos you can run.");
+            break;
+          }
+          io.println('Loading demo ' + demo + '...');
+          io.println('');
+
+          var args = ["-e", "demos/" + demo];
+          if (words.length > 2) args = [].concat(args, words.slice(2));
+
+          console.log(args);
+          Module.callMain(args);
+          break;
+        }
+
+        default:
+          io.println("INVALID COMMAND WORD: '" + cmd + "'")
+      }
+    }
+
+    function setupHterm() {
+      // We don't mark it local so people can play with it in the dev console.
+      var term = new hterm.Terminal();
+      term.onTerminalReady = function () {
+        const io = this.io.push();
+
+        io.onVTKeystroke = (string) => {
+          switch (string) {
+            case '\r':
+              io.println('');
+              processCommand(io, term, termbuf);
+              termbuf = "";
+              printPrompt(io);
+              break;
+            default:
+              termbuf += string;
+              io.print(string);
+              break;
+          }
         };
+
+        io.sendString = (string) => {
+          termbuf += string;
+          io.print(string);
+        }
+
+        initContent(io);
+        this.setCursorVisible(true);
+
+        this.keyboard.bindings.addBindings({
+          // Allow page refreshing.
+          'Ctrl-R': 'PASS',
+          'Ctrl-Shift-R': 'PASS',
+          // Fullscreen shortcut.
+          'F11': 'PASS',
+        });
+
+        // Just enough to provide an example.
+        this.contextMenu.setItems([
+          ['Terminal Clear', function () { term.wipeContents(); }],
+          ['Terminal Reset', function () { term.reset(); }],
+        ]);
+
+        loadEmulator(io);
       };
-    </script>
-    {{{ SCRIPT }}}
-  </body>
+      term.decorate(document.querySelector('#terminal'));
+      term.installKeyboard();
+
+      // Useful for console debugging.
+      window.term_ = term;
+    }
+
+    function loadHterm() {
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.src = 'hterm.js';
+      script.onload = function () {
+        lib.init(setupHterm);
+      };
+      document.body.appendChild(script);
+    }
+    loadHterm();
+  </script>
+</body>
+
 </html>
