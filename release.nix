@@ -283,7 +283,8 @@ let
     ** fixes. TODO FIXME: Investigate this!
     */
     emulator-wasm =
-      pkgs.stdenv.mkDerivation {
+      let hterm = import ./nix/hterm.nix { inherit pkgs; };
+      in pkgs.stdenv.mkDerivation {
         name = "rv32-sail-wasm-${version}";
         inherit version;
 
@@ -312,6 +313,7 @@ let
         installPhase = ''
           mkdir -p $out
           cp *.html *.wasm *.js *.mem *.data $out
+          cp ${hterm} $out/hterm.js
         '';
 
         checkPhase = ''
