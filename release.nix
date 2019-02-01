@@ -294,15 +294,24 @@ let
         dontFixup = true;
         doCheck = false;
 
-        configurePhase = "cp ${emulator-csrc}/* .";
+        configurePhase = ''
+          mkdir -p demos
+          cp ${emulator-csrc}/* .
+          cp ${firmware-demos}/share/rv32-sail/*.elf demos/
+        '';
         buildPhase = ''
           HOME=$TMPDIR # please emcc
-          emcc -s WASM=1 -O2 -o cruise.html *.c \
+
+          emcc -O2 -DHAVE_SETCONFIG -o cruise.html *.c \
+            -s WASM=1 \
+            -s TOTAL_MEMORY=64MB \
+            --preload-file demos \
+            --shell-file ${./src/etc/wasm-shell.html} \
             $(pkg-config --cflags zlib gmp --libs zlib gmp)
         '';
         installPhase = ''
           mkdir -p $out
-          cp *.html *.wasm *.js *.mem $out
+          cp *.html *.wasm *.js *.mem *.data $out
         '';
 
         checkPhase = ''
