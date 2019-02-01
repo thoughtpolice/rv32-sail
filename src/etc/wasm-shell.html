@@ -55,6 +55,20 @@
       );
     }
 
+    const commandHelp = [
+      ``,
+      `The supported command set: `,
+      ``,
+      `  ${bullet} ${bold}${underline}ls${normal}, which lists the available demos`,
+      `  ${bullet} ${bold}${underline}run${normal} ${underline}<FILENAME>${normal} ${underline}[OPTIONS...]${normal} runs a demo, where`,
+      `    ${bullet} ${underline}<FILENAME>${normal} is the name of a demo`,
+      `    ${bullet} ${underline}[OPTIONS...]${normal} are optional arguments to pass to ${bold}rv32-sail${normal}`,
+      `  ${bullet} ${bold}${underline}clear${normal}, which clears the terminal`,
+      `  ${bullet} ${bold}${underline}reload${normal}, which reloads the page`,
+      `  ${bullet} ${bold}${underline}help${normal}, the information you're reading now`,
+      ``,
+    ];
+
     var Module = {
       arguments: ["-C", "debug.print_info=1", "-e", "demos/dhrystone.elf"],
       noInitialRun: true,
@@ -81,7 +95,7 @@
       }
 
       Module.onRuntimeInitialized = function () {
-        io.println("OK: emulator load (.wasm + all data files) completed");
+        io.println("OK: emulator load (.wasm + all data files) completed!");
         io.println('');
 
         // Update the printErr routine again, so that it has a distinct look
@@ -95,21 +109,17 @@
         lines = [
           `rv32-sail: version ${bold}${rv32Ver}${normal}`,
           `hterm: version ${bold}${htermVer}${normal} (built on ${bold}${date}${normal})`,
-          ``,
-          `There are three basic commands:`,
-          ``,
-          `  ${bullet} ${bold}${underline}ls${normal}, which lists the available demos`,
-          `  ${bullet} ${bold}${underline}run${normal} ${underline}<FILENAME>${normal} ${underline}[OPTIONS...]${normal} runs a demo, where`,
-          `    ${bullet} ${underline}<FILENAME>${normal} is the name of a demo`,
-          `    ${bullet} ${underline}[OPTIONS...]${normal} are optional arguments to pass to ${bold}rv32-sail${normal}`,
-          `  ${bullet} ${bold}${underline}clear${normal}, which clears the terminal`,
-          ``,
+        ];
+        lines.forEach((line) => io.println(line));
+        commandHelp.forEach((line) => io.println(line));
+        lines = [
           `For example: try ${bold}run dhrystone.elf -C debug.print_info=1${normal}`,
           ``,
           `Have fun!`,
           ``,
         ];
         lines.forEach((line) => io.println(line));
+
         printPrompt(io);
       }
 
@@ -126,14 +136,17 @@
 
       let sailHome = linkify("https://www.cl.cam.ac.uk/~pes20/sail/", "Sail Programming Language");
       let htermHome = linkify("https://hterm.org", "hterm terminal emulator");
+      let riscvHome = linkify("https://www.riscv.org", "RISC-V");
+      let wasmHome = linkify("https://webassembly.org", "WebAssembly");
+
       let lines = [
         ``,
         `${bold}rv32-sail: a RISC-V RV32IM emulator, written in Sail${normal}`,
         ``,
-        `${bold}rv32-sail${normal} is a full RISC-V emulator for RV32IM in machine`,
+        `${bold}rv32-sail${normal} is a full ${riscvHome} emulator for RV32IM in machine`,
         `(M-) mode, written using the ${sailHome}.`,
         `This is a version of the emulator's C code, compiled to`,
-        `WebAssembly, equipped with the ${htermHome}.`,
+        `${wasmHome}, equipped with the ${htermHome}.`,
         ``,
       ];
       lines.forEach((line) => io.println(line));
@@ -141,28 +154,37 @@
       const topLine = '\u{23ba}';
       const colorTermFg = sgrRgbFg(0x7a, 0xe9, 0x46);
       const colorTermBg = sgrRgbBg(0x10, 0x37, 0x18);
+
+      const colorRvFgR = sgrRgbFg(0x00, 175, 0xFF);
+      const colorRvFgV = sgrRgbFg(175, 175, 0x00);
+      const colorRvFg32 = sgrRgbFg(128, 0, 128);
       lines = [
-        `  .--~~~~~~~~~~~~~------.`,
-        ` /--===============------\\`,
-        ` | |${colorTermBg}${topLine.repeat(18)}${normal}|     |`,
-        ` | |${colorTermBg}               ${normal}|     |`,
-        ` | |${colorTermBg}      ${colorTermFg}>_<      ${normal}|     |`,
-        ` | |${colorTermBg}               ${normal}|     |`,
-        ` | |${colorTermBg}_______________${normal}|     |`,
-        ` |                   ::::|`,
-        ` '======================='`,
-        ` //-'-'-'-'-'-'-'-'-'-'-\\\\`,
-        `//_'_'_'_'_'_'_'_'_'_'_'_\\\\`,
-        `[-------------------------]`,
-        `\\_________________________/`,
+        `                   .--~~~~~~~~~~~~~------.`,
+        `                  /--===============------\\`,
+        `${colorRvFgR} ____${colorRvFgV}__     __${normal}    | |${colorTermBg}${topLine.repeat(18)}${normal}|     |`,
+        `${colorRvFgR}|  _ ${colorRvFgV}\\ \\   / /${normal}    | |${colorTermBg}               ${normal}|     |`,
+        `${colorRvFgR}| |_) ${colorRvFgV}\\ \\ / /${normal}     | |${colorTermBg}      ${colorTermFg}>_<      ${normal}|     |`,
+        `${colorRvFgR}|  _ < ${colorRvFgV}\\ V /${normal}      | |${colorTermBg}               ${normal}|     |`,
+        `${colorRvFgR}|_| \\_\\${colorRvFgV} \\_/${normal}       | |${colorTermBg}_______________${normal}|     |`,
+        `${colorRvFg32} _________${normal}        |                   ::::|`,
+        `${colorRvFg32}|___ /___ \\${normal}       '======================='`,
+        `${colorRvFg32}  |_ \\ __) |${normal}      //-'-'-'-'-'-'-'-'-'-'-\\\\`,
+        `${colorRvFg32} ___) / __/${normal}      //_'_'_'_'_'_'_'_'_'_'_'_\\\\`,
+        `${colorRvFg32}|____/_____|${normal}     [-------------------------]`,
+        `                 \\_________________________/`,
       ];
-      lines.forEach((line) => io.println(' '.repeat(20) + line));
+
+      lines.forEach((line) => io.println(' '.repeat(5) + line));
       io.println('');
+
 
       let links = [
         ['https://github.com/thoughtpolice/rv32-sail/', 'Homepage, Source Code, & Documentation'],
         ['https://github.com/thoughtpolice/rv32-sail/issues', 'Bugs & Feature Requests'],
         ['mailto:aseipp at pobox dot com', 'Contact'],
+        ['https://github.com/riscv/riscv-isa-manual/releases', 'Recent RISC-V ISA Specifications (PDFs)'],
+        ['https://www.cl.cam.ac.uk/~pes20/sail/', 'Sail Homepage'],
+        ['https://www.cl.cam.ac.uk/~pes20/rems/', 'The REMS Project'],
       ];
       links.forEach(([uri, text]) => io.println(`  ${bullet} ${linkify(uri, text)}`));
       io.println('');
@@ -182,7 +204,11 @@
         case '': { break; }
         case 'clear': { term.wipeContents(); break; }
         case 'ls': { io.println(validDemos.join(' ')); break; }
-
+        case 'reload': { location.reload(); break; }
+        case 'help': {
+          commandHelp.forEach((line) => io.println(line));
+          break;
+        }
         case 'run': {
           if (words.length < 2) {
             io.println("INVALID COMMAND ARGUMENTS: 'run' must have the name of a demo!");
