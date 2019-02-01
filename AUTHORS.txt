@@ -55,6 +55,10 @@ inspired by the design and implementation of JonesForth, a public domain FORTH
 implementation for i386/Linux by Richard W.M. Jones. It has been made available
 under the terms of this project (the MIT license).
 
+Some of the code for the 'libfirm' library was taken from the "riscv-probe"
+project, which contains various bare-metal utilities for RISC-V -M devices.
+"riscv-probe" was written by Michael Clark (of SiFive Inc).
+
 CoreMark is a CPU benchmarking project by the non-profit Embedded Microprocessor
 Benchmark Consortium (EEMBC). It was previously under a more restrictive
 license, but is now open source under the terms of the Apache 2.0 License.
