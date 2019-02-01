@@ -322,6 +322,18 @@ let
         '';
       };
 
+    /*
+    ** Build a copy of the documentation to be uploaded to the gh-pages
+    ** branch.
+    */
+    gh-pages = pkgs.runCommand "gh-pages" {} ''
+      mkdir -p html/js
+      cp ${./src/etc/index.gh.html} html/index.html
+      cp -R ${emulator-wasm}/* html/js
+      mv html/js/cruise.html html/js/index.html
+      tar -zcvf $out ./html
+    '';
+
   }; /* jobs */
 
 in jobs
