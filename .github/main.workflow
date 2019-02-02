@@ -25,9 +25,14 @@ action "Publish Filter" {
   args = "branch master"
 }
 
+action "Docker Login" {
+  uses = "actions/docker/login@master"
+  needs = ["Publish Filter"]
+  secrets = ["DOCKER_USERNAME", "DOCKER_PASSWORD"]
+}
+
 action "Push to Docker Hub" {
   uses = "./.github/actions/skopeo"
-  needs = ["Publish Filter"]
+  needs = ["Docker Login"]
   args = "docker.tar.gz docker://thoughtpolice/rv32-sail --no-latest"
-  secrets = ["SKOPEO_DEST_PASS", "SKOPEO_DEST_USER"]
 }

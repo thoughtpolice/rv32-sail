@@ -6,10 +6,6 @@
 set -e
 
 # sanitize env
-[ "$SKOPEO_DEST_USER" = "" ] && \
-  echo "SKOPEO_DEST_USER must be configured!" && exit 1
-[ "$SKOPEO_DEST_PASS" = "" ] && \
-  echo "SKOPEO_DEST_PASS must be configured!" && exit 1
 [ "$GITHUB_SHA" = "" ] && \
   echo "GITHUB_SHA must be configured!" && exit 1
 
@@ -56,5 +52,5 @@ echo using "$(skopeo --version)"
 echo using tags: "$(for x in "${alltags[@]}"; do echo -n "$x "; done)"
 
 for t in "${alltags[@]}"; do
-  skopeo copy --dcreds "$SKOPEO_DEST_USER:$SKOPEO_DEST_PASS" "docker-archive:$archive" "${registry}:${t}"
+  skopeo copy "docker-archive:$archive" "${registry}:${t}"
 done
