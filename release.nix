@@ -328,10 +328,9 @@ let
       };
 
     /*
-    ** Build a copy of the documentation to be uploaded to the gh-pages
-    ** branch.
+    ** Build a copy of the WebAssembly emulator to be deployed somewhere.
     */
-    gh-pages = pkgs.runCommand "gh-pages" {} ''
+    wasm-html = pkgs.runCommand "wasm-html" {} ''
       mkdir -p html/js
       cp ${./src/etc/index.gh.html} html/index.html
       cp -R ${emulator-wasm}/* html/js

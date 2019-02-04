@@ -18,11 +18,12 @@ file="$1"
 echo "Building all attrs in $file..."
 nix-build --no-link ${QUIET_ARG} "$file"
 
+echo "Grabbing build artifact paths..."
 docker=$(nix-build --no-link ${QUIET_ARG} "$file" -A "docker")
-pages=$(nix-build --no-link ${QUIET_ARG} "$file" -A "gh-pages")
+wasm=$(nix-build --no-link ${QUIET_ARG} "$file" -A "wasm-html")
 
-echo "Copying Docker Tarball to docker.tar.gz..."
+echo "Copying Docker Tarball to docker.tar.gz (from $docker)..."
 cp -L "$docker" docker.tar.gz
 
-echo "Copying gh-pages tarball to gh-pages.tar.gz..."
-cp -L "$pages" gh-pages.tar.gz
+echo "Copying wasm-html tarball to wasm-html.tar.gz (from $wasm)..."
+cp -L "$wasm" wasm-html.tar.gz
