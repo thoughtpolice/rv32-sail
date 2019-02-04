@@ -252,6 +252,14 @@
               termbuf = "";
               printPrompt(io);
               break;
+            case '\b':
+              if (termbuf.length != 0) {
+                termbuf = termbuf.substring(0, termbuf.length - 1);
+                term.scheduleSyncCursorPosition_();
+                term.cursorLeft();
+                term.eraseToRight();
+              }
+              break;
             default:
               termbuf += string;
               io.print(string);
@@ -283,6 +291,8 @@
 
         loadEmulator(io);
       };
+      term.prefs_.set('backspace-sends-backspace', true);
+      term.prefs_.set('cursor-blink', true);
       term.decorate(document.querySelector('#terminal'));
       term.installKeyboard();
 
