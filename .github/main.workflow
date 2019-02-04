@@ -1,6 +1,9 @@
 workflow "Build and Publish" {
   on = "push"
-  resolves = ["Push to Docker Hub"]
+  resolves = [
+    "Push to Docker Hub",
+    "Backblaze B2 Sync",
+  ]
 }
 
 action "Shell Lint" {
@@ -10,7 +13,7 @@ action "Shell Lint" {
 
 action "Docker Lint" {
   uses = "docker://replicated/dockerfilelint"
-  args = [".github/actions/nix-build/Dockerfile", ".github/actions/skopeo/Dockerfile", ".github/actions/cachix/Dockerfile", ".github/actions/b2-sync/Dockerfile" ]
+  args = [".github/actions/nix-build/Dockerfile", ".github/actions/skopeo/Dockerfile", ".github/actions/cachix/Dockerfile", ".github/actions/b2-sync/Dockerfile"]
 }
 
 action "Nix Docker Build" {
@@ -35,4 +38,11 @@ action "Push to Docker Hub" {
   uses = "./.github/actions/skopeo"
   needs = ["Docker Login"]
   args = "docker.tar.gz docker://thoughtpolice/rv32-sail --no-latest"
+}
+
+action "Backblaze B2 Sync" {
+  uses = "./.github/actions/b2-sync"
+  needs = ["Publish Filter"]
+  secrets = ["RCLONE_CONFIG_B2_ACCOUNT", "RCLONE_CONFIG_B2_KEY"]
+  args = "wasm-html.tar.gz aseipp/rv32-sail/web/"
 }
