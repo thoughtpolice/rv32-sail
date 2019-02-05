@@ -1,6 +1,7 @@
 * 2019-XX-XX: 1.0.0 Release
 
 - Initial "stable" version
+  - Not actually very stable
 - Fundamental RV32 support:
   - Full RV32I Base Instruction Implementation
   - Full -M Extension Implementation
@@ -9,7 +10,11 @@
 - Multiple demos:
   - My old FORTH
   - CoreMark, Dhrystone
+  - A working [[https://webassembly.org][WebAssembly]] build, using off-thread Web Workers.
 - Fairly robust build infrastructure
   - Robust Nix-powered, transparent build system
-  - Automatic Docker image builds of slim, static binaries
-    thanks to GitHub Actions and ~pkgsMusl~
+  - Automatic artifact builds and publishing on every ~master~
+    push, using [[https://github.com/features/actions][GitHub Actions]]:
+    - A public [[https://aseipp.cachix.org][Cachix cache]] for Nix builds
+    - A public [[https://hub.docker.com/thoughtpolice/rv32-sail][Docker Container]]
+    - A [[https://b2.ls0f.pw/file/aseipp/rv32-sail/web/index.html][publicly available copy]] of the WebAssembly build
