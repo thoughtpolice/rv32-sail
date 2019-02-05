@@ -33,6 +33,8 @@
 <body>
   <div id='terminal'></div>
   <script type='text/javascript'>
+    const rv32Ver = '@RV32_VERSION@';
+
     const esc = `\x1b`;
     const bel = `\x07`;
     const clrln = `${esc}[2;K`;
@@ -102,7 +104,6 @@
         // from load-time errors
         errcolor = `${sgrRgbFg(0xd5, 0x0f, 0x25)}`;
 
-        const rv32Ver = '@RV32_VERSION@';
         const htermVer = lib.resource.getData('hterm/changelog/version');
         const date = lib.resource.getData('hterm/changelog/date');
 
