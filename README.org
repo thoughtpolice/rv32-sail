@@ -1,4 +1,4 @@
-* rv32-sail - high-level emulator for RV32IM core 🔥
+* rv32-sail - high-level emulator for RV32IM 🔥
 
 [[https://img.shields.io/badge/version-1.0pre-orange.svg]] [[https://img.shields.io/badge/license-MIT-blue.svg]]
 
@@ -81,7 +81,7 @@ device could be a pure open hardware/FOSS replacement for devices like the
 ESP32.)
 
 * Table of Contents :TOC_4_gh:
-- [[#rv32-sail---high-level-emulator-for-rv32im-core-][rv32-sail - high-level emulator for RV32IM core 🔥]]
+- [[#rv32-sail---high-level-emulator-for-rv32im-][rv32-sail - high-level emulator for RV32IM 🔥]]
 - [[#features][Features]]
 - [[#quickstart][Quickstart]]
   - [[#quickstart-in-your-browser][Quickstart: In your browser]]
@@ -115,10 +115,12 @@ three easy ways to do it: your Browser, Docker, and a [[https://nixos.org][Nix]]
 
 As mentioned above, you can run the emulator *[[https://b2.ls0f.pw/file/aseipp/rv32-sail/web/js/index.html][in your browser]]*, right now. This
 requires a modern system with support for [[https://webassembly.org][WebAssembly]]. It has a neat retro UX,
-using the JavaScript [[https://hterm.org][hterm]] library. This page is automatically updated on every
-commit to the ~master~ branch.
+using the JavaScript [[https://hterm.org][hterm]] library. It offloads all of the compiled code into a
+[[https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers][Web Worker]] so the main UI thread isn't blocked, even when running "compute
+intense" demos like CoreMark.
 
-This has been tested on recent Chrome (Desktop), and Safari (iOS), though mobile
+This page is automatically updated on every commit to the ~master~ branch. It
+has been tested on recent Chrome (Desktop), and Safari (iOS), though mobile
 input is quite glitchy right now. Firefox seems to have a WebAssembly loading
 glitch that requires cache purges, and hterm integration problems; I am not sure
 what extent this is inherent or just my code.
