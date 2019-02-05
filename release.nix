@@ -300,6 +300,8 @@ let
           cp ${emulator-csrc}/* .
           cp ${firmware-demos}/share/rv32-sail/*.elf demos/
           cp ${./src/etc/wasm-shell.html} cruise.html
+          cp ${./src/etc/wasm-main.js} main.js
+          cp ${./src/etc/wasm-worker.js} worker.js
         '';
         buildPhase = ''
           HOME=$TMPDIR # please emcc
@@ -310,7 +312,7 @@ let
             --preload-file demos \
             $(pkg-config --cflags zlib gmp --libs zlib gmp)
 
-          substituteInPlace ./cruise.html \
+          substituteInPlace ./main.js \
             --subst-var-by RV32_VERSION '${version}'
         '';
         installPhase = ''
