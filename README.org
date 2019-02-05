@@ -30,7 +30,7 @@ equivalent of ~rv32-sail~, try [[https://github.com/cliffordwolf/picorv32][picor
 
 * Features
 
-- High-level RISC-V ISA emulator, written in Sail
+- High-level RISC-V ISA emulator, written in [[https://www.cl.cam.ac.uk/~pes20/sail/][Sail]]
   - Clean code is paramount with lots of comments.
   - High-level, type-safe, functional-imperative description of RISC-V.
   - Part hand-written (execution engine), part generated (decoder) at
@@ -50,6 +50,10 @@ equivalent of ~rv32-sail~, try [[https://github.com/cliffordwolf/picorv32][picor
   - Designed to be used incrementally and easy for contributors. Most of
     the Nix complexity is completely hidden, and the build system is
     easy as pie to use -- like a normal shell script.
+  - Uses GitHub actions for continuous deployment of binary artifacts and
+    examples (Docker, WebAssembly). This makes it easy for users to play.
+  - When developing, you can download all the programming tools without
+    compiling anything at all, thanks to [[https://cachix.org/][Cachix]]!
 - Included programming tools
   - GCC 8.x with the RISC-V backend is the primary C toolchain.
   - A firmware shim library called ~libfirm~ provides the basics needed
@@ -82,7 +86,7 @@ ESP32.)
 - [[#quickstart][Quickstart]]
   - [[#quickstart-in-your-browser][Quickstart: In your browser]]
   - [[#quickstart-docker][QuickStart: Docker]]
-  - [[#quickstart-nix][QuickStart: Nix]]
+  - [[#quickstart-nix-with-cachix][QuickStart: Nix with Cachix]]
 - [[#building][Building]]
 - [[#usage][Usage]]
   - [[#running-demos-and-tests][Running demos and tests]]
@@ -108,7 +112,6 @@ ESP32.)
   - [[#why-write-this][Why write this?]]
   - [[#why-is-the-simulator-called-cruise][Why is the simulator called "cruise"?]]
   - [[#why-is-the-two-level-build-system-so-weird-why-do-i-need-nix][Why is the (two level) build system so weird? Why do I need Nix?]]
-  - [[#building-gcc-takes-a-while-can-i-skip-that][Building GCC takes a while, can I skip that?]]
 - [[#authors][Authors]]
 - [[#license][License]]
 
@@ -121,7 +124,8 @@ three easy ways to do it: your Browser, Docker, and a [[https://nixos.org][Nix]]
 
 As mentioned above, you can run the emulator *[[https://b2.ls0f.pw/file/aseipp/rv32-sail/web/js/index.html][in your browser]]*, right now. This
 requires a modern system with support for [[https://webassembly.org][WebAssembly]]. It has a neat retro UX,
-using the JavaScript [[https://hterm.org][hterm]] library.
+using the JavaScript [[https://hterm.org][hterm]] library. This page is automatically updated on every
+commit to the ~master~ branch.
 
 This has been tested on recent Chrome (Desktop), and Safari (iOS), though mobile
 input is quite glitchy right now. Firefox seems to have a WebAssembly loading
@@ -136,7 +140,7 @@ updates are very welcome.
 ** QuickStart: Docker
 
 There's a *Docker Container* that's automatically compiled and built (using
-[[https://github.com/features/actions][GitHub Actions]]) on every commit to the main branches. You can try the emulator
+[[https://github.com/features/actions][GitHub Actions]]) on every commit to the ~master~ branch. You can try the emulator
 immediately by running one of the included demos:
 
 #+BEGIN_SRC language
@@ -157,10 +161,11 @@ The ~:latest~ tag is reserved for stable releases -- there are no stable
 releases as of now.
 #+END_QUOTE
 
-** QuickStart: Nix
+** QuickStart: Nix with Cachix
 
-*TODO FIXME*: Describe using Cachix to download the binaries and run them from
-my cache.
+There's a *[[https://cachix.org][Cachix]] Cache* containing all the build tools as well as pre-built
+copies of the emulator, updated on every commit to the ~master~ branch. Read the
+"Building" section below to get started.
 
 * Building
 
@@ -176,7 +181,7 @@ executing ~sudo~ on your machine, then you can do a quick installation easily
 from your shell:
 
 #+BEGIN_SRC bash
-$ sh <(https://nixos.org/nix/install) --daemon
+$ sh <(curl https://nixos.org/nix/install) --daemon
 #+END_SRC
 
 (Please read the shell script. All it does is download a tarball and execute an
@@ -201,16 +206,39 @@ is designed to be as easy as possible. If you have a recent version of Nix
 installed, this will essentially "just work" -- though the first invocation will
 take some time (see below).
 
+There is a binary cache available thanks to [[https://cachix.org][Cachix]] which contains copies of all
+the build tools and builds from the ~master~ branch. First, as ~root~ or someone
+who can ~sudo~, add yourself to ~trusted-users~, and restart the ~nix-daemon~
+service:
+
 #+BEGIN_SRC bash
-$ git clone https://github.com/thoughtpolice/rv32-sail
-$ cd rv32-sail/
-$ ./bake.hs -j
+grep -q "trusted-users.*$USER" /etc/nix/nix.conf ; \
+    [ ! $? -eq 0 ] && echo "trusted-users = root $USER" | sudo tee -a /etc/nix/nix.conf
+sudo systemctl restart nix-daemon.service
 #+END_SRC
 
-This will *take some time to build the GCC cross compiler for RISC-V*, as well
-as the Sail toolchain. Afterwords, it will compile the emulator as well as some
-example firmware you can use. All of the build artifacts will be available under
-the ~./build/~ directory.
+Then you can configure binary caches with a local file in
+~$HOME/.config/nix/nix.conf~:
+
+#+BEGIN_SRC bash
+cat > "$HOME/.config/nix/nix.conf" <<EOF
+substituters = https://cache.nixos.org https://aseipp.cachix.org
+trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= aseipp.cachix.org-1:UaUH2DczaM7ytMZlyuHtpYq8FAziIQnjmGMaB45rvRw=
+EOF
+#+END_SRC
+
+Now, clone the repository and build everything:
+
+#+BEGIN_SRC bash
+git clone https://github.com/thoughtpolice/rv32-sail
+cd rv32-sail/
+nix build --no-link -f release.nix # download cached binaries
+./bake -j # do a local build
+#+END_SRC
+
+Provided this all works correctly, you won't have to build any toolchains
+locally, you can simply download everything on demand, provided you have a few
+GB of space free (download sizes are much smaller than that).
 
 If you want to control or invoke the underlying Sail toolchain directly (for
 example, to pass different options, or examine the build environment), simply
@@ -527,11 +555,6 @@ end-user distribution, the use of Haskell is nearly invisible for most users,
 which was a prime concern. (If this was a random software project designed for
 true end-user packaging/use, like a software library, it would be a different
 story.)
-
-** Building GCC takes a while, can I skip that?
-
-In the future, I hope to set up a [[https://cachix.org][Cachix]] cache containing all the needed build
-dependencies. Stay tuned for that.
 
 * Authors
 
