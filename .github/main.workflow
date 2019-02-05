@@ -3,6 +3,7 @@ workflow "Build and Publish" {
   resolves = [
     "Push to Docker Hub",
     "Backblaze B2 Sync",
+    "Cachix Push",
   ]
 }
 
@@ -45,4 +46,13 @@ action "Backblaze B2 Sync" {
   needs = ["Publish Filter"]
   secrets = ["RCLONE_CONFIG_B2_ACCOUNT", "RCLONE_CONFIG_B2_KEY"]
   args = "wasm-html.tar.gz aseipp/rv32-sail/web/"
+}
+
+action "Cachix Push" {
+  uses = "./.github/actions/cachix"
+  needs = ["Publish Filter"]
+  env = {
+    CACHIX_CACHE_NAME = "aseipp"
+  }
+  secrets = ["CACHIX_SIGNING_KEY", "CACHIX_AUTH_TOKEN"]
 }
