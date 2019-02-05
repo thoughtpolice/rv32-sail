@@ -221,6 +221,7 @@ Then you can configure binary caches with a local file in
 ~$HOME/.config/nix/nix.conf~:
 
 #+BEGIN_SRC bash
+mkdir -p "$HOME/.config/nix"
 cat > "$HOME/.config/nix/nix.conf" <<EOF
 substituters = https://cache.nixos.org https://aseipp.cachix.org
 trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= aseipp.cachix.org-1:UaUH2DczaM7ytMZlyuHtpYq8FAziIQnjmGMaB45rvRw=
