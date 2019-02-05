@@ -173,7 +173,7 @@ function processCommand(io, term, input) {
     var cmd = words[0];
 
     // TODO FIXME: why doesn't smoke work?
-    var validDemos = ["42", "dhrystone", "forth"]
+    var validDemos = ["42", "dhrystone", "forth", "coremark"]
         .map((f) => f + '.elf');
 
     switch (cmd) {
