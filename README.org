@@ -1,6 +1,6 @@
-* rv32-sail - high-level emulator for RV32IMAC core 🔥
+* rv32-sail - high-level emulator for RV32IM core 🔥
 
-[[https://img.shields.io/badge/version-0.0pre-orange.svg]] [[https://img.shields.io/badge/license-MIT-blue.svg]]
+[[https://img.shields.io/badge/version-1.0pre-orange.svg]] [[https://img.shields.io/badge/license-MIT-blue.svg]]
 
 Run it *[[https://b2.ls0f.pw/file/aseipp/rv32-sail/web/js/index.html][in your browser]]*, right now!
 
@@ -81,7 +81,7 @@ device could be a pure open hardware/FOSS replacement for devices like the
 ESP32.)
 
 * Table of Contents :TOC_4_gh:
-- [[#rv32-sail---high-level-emulator-for-rv32imac-core-][rv32-sail - high-level emulator for RV32IMAC core 🔥]]
+- [[#rv32-sail---high-level-emulator-for-rv32im-core-][rv32-sail - high-level emulator for RV32IM core 🔥]]
 - [[#features][Features]]
 - [[#quickstart][Quickstart]]
   - [[#quickstart-in-your-browser][Quickstart: In your browser]]
@@ -103,15 +103,6 @@ ESP32.)
     - [[#rust][Rust]]
   - [[#libfirm-starter-guide][Libfirm starter guide]]
   - [[#adding-your-own-programs][Adding your own programs]]
-- [[#emulator-runtime-configuration-reference][Emulator runtime configuration reference]]
-- [[#hacking-the-core][Hacking the core]]
-  - [[#basic-high-level-overview][Basic high level overview]]
-  - [[#build-system-shenanigans][Build system shenanigans]]
-  - [[#nix-nonsense][Nix nonsense]]
-- [[#faq][FAQ]]
-  - [[#why-write-this][Why write this?]]
-  - [[#why-is-the-simulator-called-cruise][Why is the simulator called "cruise"?]]
-  - [[#why-is-the-two-level-build-system-so-weird-why-do-i-need-nix][Why is the (two level) build system so weird? Why do I need Nix?]]
 - [[#authors][Authors]]
 - [[#license][License]]
 
@@ -400,6 +391,9 @@ The primary directories you need to understand are:
 - ~./src/demos~, which contains a bunch of fun demo programs.
 - ~./nix~, and ~release.nix~, which contain the Nix code for provisioning
   all the needed tools.
+- ~/.github~ contains all the code for this repositories' GitHub Actions
+  workflows and commands, including tools for  pushing Docker, HTML pages
+  and Cachix uploads.
 
 Everything else falls outside the primary raidus of the blast zone.
 
@@ -456,106 +450,6 @@ Nam vestibulum accumsan nisl.
 
 Nunc rutrum turpis sed pede. Nullam eu ante vel est convallis dignissim. Nunc
 porta vulputate tellus. Donec vitae dolor. Vivamus id enim.
-
-* Emulator runtime configuration reference
-
-Not Invented Here. In the future this will describe the semantics and use of the
-various ~-C~ options for the emulator.
-
-* Hacking the core
-
-I've tried to make contributing easy and streamlined it as much as possible for
-contributors.
-
-** Basic high level overview
-
-** Build system shenanigans
-
-The build system is written in Haskell, using the [[https://shakebuild.com][Shake]] library, which is an API
-for expressing and designing build systems -- so it's suggested you [[https://shakebuild.com/manual][read the
-manual]] to understand how it works.
-
-The core TL;DR is that Shake is a "dynamic" build system unlike Make: rather
-than declaring dependencies statically along with a target, you declare a target
-and can run arbitrary code, /then/ declare dependencies. Dependencies can be
-arbitrary values, not just files, and Shake has very precise dependency tracking
-with an array of built-in utilities: support for tracking file contents,
-environment variables, tool output, etc.
-
-The end result of these features is that the project-level build system is
-nearly magical and very robust, tracks changes to source code and build tools
-extremely accurately, is fast to respond to all changes, and easy to use.
-
-Currently, there is a startup penalty paid for running the build system under
-~nix-shell~. This will probably be rectified in the future, ideally by
-modularizing it a bit more and then compiling an executable, instead.
-
-** Nix nonsense
-
-While Shake is the project-level build system, Nix is the /package-level/ build
-system: it's what is used to distribute artifacts to end-users after the build
-system has done its job, and also to prepare the environment with all the tools
-we need (by running /their/ build systems).
-
-TODO FIXME: describe pinning, etc.
-
-* FAQ
-
-** Why write this?
-
-There is an alternative, [[https://github.com/rems-project/sail-riscv][hand-written RISC-V model]] written in Sail as part of
-the [[https://www.cl.cam.ac.uk/~pes20/rems/][REMS Project]]. The REMS design is focusing on a full 64-bit core that can
-boot Linux and seL4. My intentions are hopefully more modest, first aiming for
-basic RV32 support and possibly some user/supervisor mode support, and, eventual
-capability support in the spirit of CHERI (currently there is a [[https://github.com/CTSRD-CHERI/sail-cheri-mips][CHERI-MIPS]] Sail
-model, however; the RISC-V CHERI specification is relatively recent.)
-
-But mainly, I found Sail and the latest version seemed really capable and cool,
-so I designed to write this.
-
-** Why is the simulator called "cruise"?
-
-Because you're sailing on a cruise ship.
-
-** Why is the (two level) build system so weird? Why do I need Nix?
-
-Because the problem it's solving is complex. Also, I am lazy, and it's easier to
-do this right once than solve it a bunch of times.
-
-In reality, Sail and associated RISC-V tooling is relatively new -- combined
-with that, you need external 3rd party dependencies like linksem, ott, lem, Z3,
-a cross compiler, etc. This kind of stuff is a nightmare for users to get right
-and it's often very easy for them to screw something up along the way (configure
-the toolchain wrong, incorrect versions, newer dependencies aren't available in
-their distribution, etc). You also often need to manage like 3 package managers
-(at minimum) in some weird ritual to do all these things normally.
-
-This makes just doing things like writing firmware and models and getting your
-feet wet tedious -- and it makes it especially frustrating for users who want to
-try to understand the core ideas behind the project.
-
-Instead, I chose to just do One Big Huge Ritual and sacrifice everything to Nix.
-It consumes everything and makes everyone happy. It essentially vendors every
-dependency for the project independent of the host Linux system and provides
-hermetic builds. It's like Google's [[https://bazel.build][Bazel]], if it were a package manager for
-arbitrary software, including things like OPAM, arbitrary C code (Z3), and
-Haskell code. The way I've set things up also ensures that everyone -- no matter
-what Linux distribution they're running on, whatever time -- should hopefully
-get identical results (more or less), making real reproduction and reuse much,
-much easier. It will work the same today and tomorrow and the next week every
-time (hopefully).
-
-The Haskell side of things is a bit murkier, but basically, Shake is very robust
-in the long term and I plan on refining this project for a while, so investing
-in a long-term solution with some up-front work is nice. It also comes with a
-lot more guarantees and is generally a lot more flexible than Make.
-
-Finally, because Nix sufficiently packages all the necessary dependencies, and
-because this is designed to be a platform for testing software rather than
-end-user distribution, the use of Haskell is nearly invisible for most users,
-which was a prime concern. (If this was a random software project designed for
-true end-user packaging/use, like a software library, it would be a different
-story.)
 
 * Authors
 
