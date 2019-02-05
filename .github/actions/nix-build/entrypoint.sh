@@ -1,4 +1,4 @@
-#! /usr/bin/env sh
+#! /usr/bin/env bash
 
 # Entrypoint that runs nix-build and, optionally, copies Docker image tarballs
 # to real files. The reason this is necessary is because once a Nix container
@@ -21,6 +21,11 @@ nix-build --no-link ${QUIET_ARG} "$file"
 echo "Grabbing build artifact paths..."
 docker=$(nix-build --no-link ${QUIET_ARG} "$file" -A "docker")
 wasm=$(nix-build --no-link ${QUIET_ARG} "$file" -A "wasm-html")
+
+echo "Copying build closure to $(pwd)/store..."
+mapfile -t storePaths < <(nix-build ${QUIET_ARG} --no-link "$file" | grep -v cache-deps)
+printf '%s\n' "${storePaths[@]}" > store.roots
+nix copy --to "file://$(pwd)/store" "${storePaths[@]}"
 
 echo "Copying Docker Tarball to docker.tar.gz (from $docker)..."
 cp -L "$docker" docker.tar.gz
