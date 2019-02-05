@@ -196,6 +196,7 @@ function processCommand(io, term, input) {
             if (!validDemos.includes(demo)) {
                 io.println("INVALID DEMO NAME: '" + demo + "' does not exist!");
                 io.println("Try 'ls' to see which demos you can run.");
+                printPrompt(io);
                 break;
             }
 
