@@ -2,7 +2,7 @@
 
 [[https://img.shields.io/badge/version-1.0pre-orange.svg]] [[https://img.shields.io/badge/license-MIT-blue.svg]]
 
-Run it *[[https://b2.ls0f.pw/file/aseipp/rv32-sail/web/js/index.html][in your browser]]*, right now!
+Run it *[[https://riscv.ls0f.pw][in your browser]]*, right now!
 
 -----
 
@@ -113,7 +113,7 @@ three easy ways to do it: your Browser, Docker, and a [[https://nixos.org][Nix]]
 
 ** Quickstart: In your browser
 
-As mentioned above, you can run the emulator *[[https://b2.ls0f.pw/file/aseipp/rv32-sail/web/js/index.html][in your browser]]*, right now. This
+As mentioned above, you can run the emulator *[[https://riscv.ls0f.pw][in your browser]]*, right now. This
 requires a modern system with support for [[https://webassembly.org][WebAssembly]]. It has a neat retro UX,
 using the JavaScript [[https://hterm.org][hterm]] library. It offloads all of the compiled code into a
 [[https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers][Web Worker]] so the main UI thread isn't blocked, even when running "compute

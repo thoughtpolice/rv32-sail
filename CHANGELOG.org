@@ -17,4 +17,4 @@
     push, using [[https://github.com/features/actions][GitHub Actions]]:
     - A public [[https://aseipp.cachix.org][Cachix cache]] for Nix builds
     - A public [[https://hub.docker.com/r/thoughtpolice/rv32-sail][Docker Container]]
-    - A [[https://b2.ls0f.pw/file/aseipp/rv32-sail/web/js/index.html][publicly available copy]] of the WebAssembly build
+    - A [[https://riscv.ls0f.pw][publicly available copy]] of the WebAssembly build
