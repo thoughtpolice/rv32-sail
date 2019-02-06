@@ -8,9 +8,6 @@
 val execute : ast -> unit effect { escape, rreg, wreg, wmem, rmem }
 scattered function execute
 
-/* TODO FIXME: no compressed ones yet, so fake one */
-function clause execute C_NOP() = ()
-
 val __rv32_store : forall 'n, 0 < 'n <= 4. (imm12, regbits, regbits, atom('n)) -> unit effect { wmem, rreg }
 function __rv32_store (imm, rs2, rs1, width) = {
   let ptr : xlen_t = X(rs1) + exts(imm);

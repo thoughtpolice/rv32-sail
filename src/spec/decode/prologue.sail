@@ -63,10 +63,5 @@ scattered mapping encdec_comp
 val print_insn : ast -> string
 scattered function print_insn
 
-/* TODO FIXME: no compressed ones yet, so fake one */
-union clause ast = C_NOP : unit
-mapping clause encdec_comp = C_NOP() <-> 0b000 @ 0b0 @ 0b00000 @ 0b00000 @ 0b01
-function clause print_insn C_NOP() = "c.nop"
-
 /* -------------------------------------------------------------------------- */
 /* -- El Fin (decode/prologue.sail) ----------------------------------------- */

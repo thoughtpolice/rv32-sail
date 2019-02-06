@@ -48,13 +48,28 @@ specSources
 specSources mainFile
   = pure $ preamble <> setup <> decoder <> execute <> elfMain
   where
-    preamble = map (srcDir "preamble") [ "import", "ffi", "operators", "asm", "util" ]
-            <> [ gen "hexbits" ]
-    setup    = map src [ "basics", "config", "zicsr" ]
-    decoder  = [ src "decode/prologue" ]
-            <> map gen [ "decode/base" ]
-            <> [ src "decode/epilogue" ]
-    execute  = map (srcDir "execute") [ "prologue", "base", "ext-m", "epilogue" ]
+    preamble = map (srcDir "preamble")
+      [ "import", "ffi", "operators", "asm", "util"
+      ] <> [ gen "hexbits" ]
+
+    setup = map src
+      [ "basics", "config", "zicsr"
+      ]
+
+    decoder  =
+      [ src "decode/prologue"
+      , gen "decode/base"
+      , src "decode/comp"
+      , src "decode/epilogue"
+      ]
+
+    execute  = map (srcDir "execute")
+      [ "prologue"
+      , "base", "comp"
+      , "ext-m"
+      , "epilogue"
+      ]
+
     elfMain  = [ src "ecall", src (fromMaybe "elfmain" mainFile) ]
 
     -- source files which are hand-written (live under ./src)
